@@ -161,21 +161,21 @@
   </style>
   <link rel="stylesheet" href="assets/shared.css">
 </head>
-<body>
+<body data-guide="web">
 <a class="skip-link" href="#main">Skip to guide</a>
 <nav class="site-nav" aria-label="Collection"><div class="site-nav-inner"><a class="site-home" href="index.html">← Interactive Guides</a></div></nav>
 <main id="main">
   <header>
-    <div class="eyebrow">Web Fundamentals · Interactive Guide</div>
+    <div class="eyebrow">Web Fundamentals</div>
     <h1>What happens when you open a website?</h1>
-    <p class="lead">Your browser finds a server, asks for resources, and turns the answers into a page. Follow one visit from address to pixels.</p>
+    <p class="lead">Follow one visit from URL to pixels: find a server, request resources, build a page.</p>
     <nav class="section-nav" aria-label="Guide sections">
       <a href="#journey">Try the journey</a><a href="#address">The address</a><a href="#dns">DNS</a><a href="#connection">TCP &amp; HTTPS</a><a href="#http">HTTP</a><a href="#rendering">The page</a><a href="#sessions">Cookies &amp; sign-in</a>
     </nav>
-    <noscript>The interactive demos need JavaScript. The explanations below still work: start with “An address tells the browser where to ask.”</noscript>
+    <noscript>Demos need JavaScript. The explanations still work: start with “Read the address.”</noscript>
   </header>
 
-  <section id="journey" class="section" aria-labelledby="journey-title">
+  <section id="journey" class="section" aria-labelledby="journey-title" data-tab-label="Journey" data-tab-note="URL to pixels">
     <div class="eyebrow">The whole journey</div>
     <h2 id="journey-title">One address. Several conversations.</h2>
     <figure>
@@ -186,15 +186,15 @@
         <div class="route-edge">requests resources<span aria-hidden="true">⇄</span></div>
         <div class="node" id="node-server"><strong>Web server</strong><span>Returns resources</span></div>
       </div>
-      <p class="route-explanation">DNS returns an address to the browser. The browser then connects directly to the web server—not through DNS.</p>
+      <p class="route-explanation">DNS finds the address; the browser contacts the server—not through DNS.</p>
       <div class="toolbar sim-controls js-only">
         <label>Visit conditions
-          <select id="scenario">
+          <select id="scenario" data-choice>
             <option value="first">First visit</option><option value="repeat">Repeat visit: cached resources</option><option value="slow">Slow server</option><option value="image">Missing image</option><option value="dns">DNS failure</option><option value="cert">Invalid certificate</option>
           </select>
         </label>
         <label>Requested path
-          <select id="path"><option value="/plants">/plants → 200</option><option value="/missing">/missing → 404</option><option value="/broken">/broken → 500</option></select>
+          <select id="path" data-choice><option value="/plants">/plants → 200</option><option value="/missing">/missing → 404</option><option value="/broken">/broken → 500</option></select>
         </label>
       </div>
       <div class="simulator">
@@ -218,96 +218,94 @@ path: /plants</pre>
         <div class="toolbar"><button type="button" id="previous" disabled>← Back</button><button type="button" id="next">Next step →</button><button type="button" id="replay">Start over</button></div>
         <p id="journey-status" role="status">Step 1 of 6. First visit.</p>
       </div>
-      <div class="timeline js-only js-grid">
+      <details class="timing-details"><summary>Timing breakdown</summary><div class="timeline js-only js-grid">
         <h3>Where the time goes</h3>
         <div id="timeline-rows"></div>
         <p class="time-total" id="time-total">Illustrative elapsed time: 0 ms</p>
-        <p class="small muted">All times are invented teaching values. Each bar uses the same 0–1,800 ms scale. Real network requests and rendering overlap; this journey separates them for clarity.</p>
-      </div>
-      <figcaption>Fig. 1 — A page load has distinct stages; DNS, certificate, HTTP, and resource failures stop or change different parts.</figcaption>
+        <p class="small muted">Invented timings; shared 0–1,800 ms scale.</p>
+      </div></details>
+      <figcaption>Try a failure to see which stage changes.</figcaption>
     </figure>
-    <p class="note">This is a simplified HTTPS visit using HTTP/2 over TCP + TLS, not a network diagnostic. <code>garden.example</code> and <code>192.0.2.10</code> are reserved examples. No real requests, credentials, or cookies are used by the demos.</p>
+    <details><summary>Model notes</summary><p>This simulated HTTPS visit uses HTTP/2 over TCP + TLS; it is not a network diagnostic. <code>garden.example</code> and <code>192.0.2.10</code> are reserved examples. No real requests, credentials, or cookies are used.</p><p>Timings are invented. Real requests and rendering overlap; the stepper separates them for clarity. DNS, certificate, HTTP, and resource failures affect different stages.</p></details>
   </section>
 
-  <section id="address" class="section" aria-labelledby="address-title">
+  <section id="address" class="section" aria-labelledby="address-title" data-tab-label="URL" data-tab-note="Read the address">
     <div class="eyebrow">1 · The address</div>
-    <h2 id="address-title">An address tells the browser where to ask.</h2>
+    <h2 id="address-title">Read the address.</h2>
     <figure class="panel">
       <div class="url-parts js-only" aria-label="Parts of the example URL">
         <button type="button" data-url-part="scheme" aria-pressed="true">https://</button><button type="button" data-url-part="host" aria-pressed="false">garden.example</button><button type="button" data-url-part="path" aria-pressed="false" id="url-path-part">/plants</button>
       </div>
       <p id="url-description" role="status"><strong>Scheme: HTTPS.</strong> Use HTTP over an encrypted connection. The scheme tells the browser how to communicate.</p>
-      <figcaption>Fig. 2 — The scheme chooses the protocol, the hostname identifies the destination, and the path identifies the resource.</figcaption>
+      <figcaption>Choose a URL part to inspect it.</figcaption>
     </figure>
-    <p class="takeaway">The URL is not the page. It identifies what the browser wants to request.</p>
-    <details><summary>Is a server a particular kind of computer?</summary><p>“Server” describes a role: software that responds to requests. It can run on one computer or a large fleet. The browser is the client. The same computer can play both roles in different conversations.</p><p>A URL can also contain a query such as <code>?sort=name</code> and a fragment such as <code>#care</code>. The query is sent in the request; the fragment is handled by the browser and is not sent in the HTTP request.</p></details>
+    <p class="takeaway">A URL identifies a resource—not the page itself.</p>
+    <details><summary>Model notes</summary><p>“Server” describes a role: software that responds to requests. It can run on one computer or a large fleet. The browser is the client. The same computer can play both roles in different conversations.</p><p>A URL can also contain a query such as <code>?sort=name</code> and a fragment such as <code>#care</code>. The query is sent in the request; the fragment is handled by the browser and is not sent in the HTTP request.</p></details>
   </section>
 
-  <section id="dns" class="section" aria-labelledby="dns-title">
+  <section id="dns" class="section" aria-labelledby="dns-title" data-tab-label="DNS" data-tab-note="Find the server">
     <div class="eyebrow">2 · Domain Name System</div>
-    <h2 id="dns-title">A name needs a network address.</h2>
-    <p>People use names like <code>garden.example</code>. Connections use IP addresses. DNS helps find the records that connect the two.</p>
+    <h2 id="dns-title">Turn a name into an address.</h2>
+    <p>DNS links names like <code>garden.example</code> to the IP addresses connections use.</p>
     <figure class="panel">
       <div class="toolbar js-only" style="margin-bottom:var(--s-4)"><label class="check-label"><input type="checkbox" id="dns-cached"> A usable DNS answer is already cached</label></div>
       <ol class="dns-list" id="dns-list">
-        <li><div><strong>Check nearby caches</strong><span>The browser or operating system may already have an answer.</span></div></li>
-        <li><div><strong>Ask a recursive resolver</strong><span>It checks its cache and does further lookups if needed.</span></div></li>
-        <li><div><strong>Follow referrals when needed</strong><span>Root → top-level domain → authoritative nameserver. Each helps locate the next source.</span></div></li>
-        <li><div><strong>Return the address</strong><span>The answer can be cached according to its time to live (TTL).</span></div></li>
+        <li><div><strong>Check nearby caches</strong><span>The browser or OS may have an answer.</span></div></li>
+        <li><div><strong>Ask a recursive resolver</strong><span>Checks its cache, then looks further if needed.</span></div></li>
+        <li><div><strong>Follow referrals when needed</strong><span>Root → top-level domain → authoritative nameserver.</span></div></li>
+        <li><div><strong>Return the address</strong><span>Cache it for its time to live (TTL).</span></div></li>
       </ol>
       <p class="dns-result" id="dns-result" role="status">Illustrative answer: garden.example → 192.0.2.10</p>
-      <figcaption>Fig. 3 — A cached answer can skip a lookup; the resolver does not deliver the webpage.</figcaption>
+      <figcaption>Caching skips lookups. DNS does not deliver the webpage.</figcaption>
     </figure>
-    <p class="note">This checkbox changes only the DNS illustration. Choose “Repeat visit” in the journey to see DNS caching alongside cached page resources.</p>
-    <details><summary>What are resolvers, TTLs, and authoritative servers?</summary><p>A recursive resolver does lookups for its clients. An authoritative nameserver publishes records for a DNS zone. A resolver can ask several servers to find an answer; cached referrals often shorten this process.</p><p>A record’s TTL limits how long that cached answer is normally reusable. Changing a DNS record does not instantly replace every cached copy. One name can also return several addresses, or point to another name.</p><p>The example domain is reserved for documentation. The referral sequence here explains the real mechanism; it is not a live lookup of <code>.example</code>.</p></details>
+    <details><summary>Model notes</summary><p>The checkbox changes only this DNS illustration. “Repeat visit” in Journey combines DNS caching with cached page resources.</p><p>A recursive resolver does lookups for its clients. An authoritative nameserver publishes records for a DNS zone. A resolver can ask several servers to find an answer; cached referrals often shorten this process.</p><p>A record’s TTL limits how long that cached answer is normally reusable. Changing a DNS record does not instantly replace every cached copy. One name can also return several addresses, or point to another name.</p><p>The example domain is reserved for documentation. The referral sequence here explains the real mechanism; it is not a live lookup of <code>.example</code>.</p></details>
   </section>
 
-  <section id="connection" class="section" aria-labelledby="connection-title">
+  <section id="connection" class="section" aria-labelledby="connection-title" data-tab-label="HTTPS" data-tab-note="Connect securely">
     <div class="eyebrow">3 · TCP, TLS &amp; certificates</div>
-    <h2 id="connection-title">Connect first. Then protect the conversation.</h2>
+    <h2 id="connection-title">Connect, then encrypt.</h2>
     <div class="two">
       <figure class="panel">
-        <h3>TCP: a reliable byte stream</h3>
+        <h3>TCP delivers bytes</h3>
         <div class="handshake">
           <strong>Browser</strong><div class="exchanges"><div class="exchange">SYN <span>→</span></div><div class="exchange"><span>←</span> SYN + ACK</div><div class="exchange">ACK <span>→</span></div></div><strong>Server</strong>
         </div>
-        <p class="small muted" style="margin-top:var(--s-4)">A new TCP connection starts with a three-way handshake. TCP delivers an ordered byte stream and retransmits lost data; it does not encrypt it.</p>
-        <div class="tls"><strong>Then TLS establishes encryption.</strong><p class="small">The browser checks the server’s certificate and the peers establish keys to protect their traffic.</p></div>
-        <figcaption>Fig. 4 — This guide models a new HTTP/2 connection: TCP first, then TLS, then HTTP.</figcaption>
+        <p class="small muted" style="margin-top:var(--s-4)">TCP orders bytes and retransmits lost data. It does not encrypt.</p>
+        <div class="tls"><strong>TLS protects them.</strong><p class="small">Check the certificate; establish encryption keys.</p></div>
+        <figcaption>New HTTP/2 connection: TCP → TLS → HTTP.</figcaption>
       </figure>
       <div class="panel">
-        <h3>What a certificate proves</h3>
-        <ul>
-          <li>The certificate covers the requested hostname.</li>
-          <li>Its validity period and chain of signatures pass the browser’s trust checks.</li>
-          <li>The TLS handshake verifies possession of the corresponding private key.</li>
-        </ul>
-        <p class="small muted">These checks help authenticate the server endpoint. A valid certificate does not prove that a shop is honest, that its content is true, or that its software has no bugs.</p>
-        <p class="small" style="margin-top:var(--s-4)">Try “Invalid certificate” in the journey: this model stops before sending the HTTP request.</p>
+        <h3>Three identity checks</h3>
+        <div class="concept-grid">
+          <div class="concept-card"><h4>Hostname</h4><p>Certificate covers the requested name.</p></div>
+          <div class="concept-card"><h4>Trust</h4><p>Validity period and signature chain pass.</p></div>
+          <div class="concept-card"><h4>Private key</h4><p>Handshake verifies possession.</p></div>
+        </div>
+        <p class="small muted">A certificate authenticates an endpoint—not an honest business.</p>
       </div>
     </div>
     <figure class="panel observer">
-      <h3>What can someone on the network read?</h3>
+      <h3>What can an observer read?</h3>
       <div class="toolbar js-only"><label class="check-label"><input type="checkbox" id="encrypted" checked> Protect this example with HTTPS</label></div>
       <pre id="observer-output" role="status">Encrypted HTTP request
 Path, headers, and body are not readable by a passive network observer.</pre>
-      <p class="small muted" style="margin-top:var(--s-3)">Destination IP addresses, timing, and traffic sizes can still be visible. The hostname may also be exposed by DNS or connection setup. HTTPS is not anonymity.</p>
-      <figcaption>Fig. 5 — Encryption protects the request’s contents, not every clue about the connection. This comparison does not change the HTTPS journey above.</figcaption>
+      <p class="small muted" style="margin-top:var(--s-3)">HTTPS hides content, not all metadata. It is not anonymity.</p>
+      <figcaption>This switch changes only the observer example.</figcaption>
     </figure>
-    <details><summary>Do all websites use TCP? What about HTTP/3?</summary><p>HTTP/1.1 and HTTP/2 normally use TCP. HTTPS adds TLS. HTTP/3 uses QUIC over UDP, with TLS security integrated into QUIC; it does not use the TCP handshake shown here.</p><p>Browsers can reuse existing connections and resume secure sessions. Not every click repeats every setup step. Our repeat-visit preset deliberately uses a new connection so you can isolate the effects of caching.</p></details>
+    <details><summary>Model notes</summary><p>Destination IP addresses, timing, and traffic sizes can remain visible. DNS or connection setup may expose the hostname.</p><p>A valid certificate does not prove content is true or software is bug-free. Try “Invalid certificate” in Journey: this model stops before sending HTTP.</p><p>HTTP/1.1 and HTTP/2 normally use TCP. HTTPS adds TLS. HTTP/3 uses QUIC over UDP, with TLS security integrated into QUIC; it does not use the TCP handshake shown here.</p><p>Browsers can reuse existing connections and resume secure sessions. Not every click repeats every setup step. Our repeat-visit preset deliberately uses a new connection so you can isolate the effects of caching.</p></details>
   </section>
 
-  <section id="http" class="section" aria-labelledby="http-title">
+  <section id="http" class="section" aria-labelledby="http-title" data-tab-label="HTTP" data-tab-note="Ask and answer">
     <div class="eyebrow">4 · Request &amp; response</div>
-    <h2 id="http-title">The server returns an answer—not a screenshot.</h2>
+    <h2 id="http-title">Resources, not screenshots.</h2>
     <div class="two">
       <figure class="panel">
         <h3>Browser asks</h3>
         <pre id="http-request">GET /plants
 Host: garden.example
 Accept: text/html</pre>
-        <p class="small muted" style="margin-top:var(--s-3)"><strong>GET</strong> requests a resource. Headers carry metadata. Some requests, such as a form submission using POST, also have a body.</p>
-        <figcaption>Fig. 6 — This readable sketch shows HTTP concepts, not literal HTTP/2 bytes. HTTP/2 encodes messages in binary frames.</figcaption>
+        <p class="small muted" style="margin-top:var(--s-3)"><strong>GET</strong> requests a resource; headers carry metadata.</p>
+        <figcaption>Readable sketch, not literal HTTP/2 bytes.</figcaption>
       </figure>
       <div class="panel">
         <h3>Server answers</h3>
@@ -319,58 +317,62 @@ Content-Type: text/html
         <div class="response-codes"><p><strong>200</strong> The request succeeded.</p><p><strong>404</strong> This resource was not found.</p><p><strong>500</strong> The server encountered an error.</p></div>
       </div>
     </div>
-    <p class="note">Change “Requested path” in the journey to compare responses. A 404 or 500 is still an HTTP response. A DNS failure is not: the browser never reached the HTTP conversation.</p>
-    <details><summary>What about redirects and APIs?</summary><p>A redirect response, such as 301 or 302 with a <code>Location</code> header, can send the browser to another URL. The browser then makes another request.</p><p>HTTP is not only for HTML. An API might return JSON; an image request returns image data. The <code>Content-Type</code> header describes the response body’s format.</p></details>
+    <p class="takeaway">404 and 500 are HTTP responses. DNS failure means HTTP never started.</p>
+    <details><summary>Model notes</summary><p>Change “Requested path” in Journey to compare responses. HTTP/2 encodes messages in binary frames. Some requests, such as a form submission using POST, also carry a body.</p><p>A redirect response, such as 301 or 302 with a <code>Location</code> header, can send the browser to another URL. The browser then makes another request.</p><p>HTTP is not only for HTML. An API might return JSON; an image request returns image data. The <code>Content-Type</code> header describes the response body’s format.</p></details>
   </section>
 
-  <section id="rendering" class="section" aria-labelledby="rendering-title">
+  <section id="rendering" class="section" aria-labelledby="rendering-title" data-tab-label="Rendering" data-tab-note="Build the page">
     <div class="eyebrow">5 &amp; 6 · Resources &amp; rendering</div>
-    <h2 id="rendering-title">Build structure. Apply style. Add behavior.</h2>
-    <p>The browser parses HTML into a document tree, applies CSS, lays out elements, and paints pixels. Scripts can respond to events and change the document.</p>
+    <h2 id="rendering-title">Turn resources into pixels.</h2>
+    <p>Parse HTML, apply CSS, lay out elements, paint. Toggle resources to see what each adds.</p>
     <figure class="panel">
       <div class="toolbar layer-controls js-only">
         <label><input id="layer-css" type="checkbox" checked> CSS</label><label><input id="layer-image" type="checkbox" checked> Image</label><label><input id="layer-js" type="checkbox" checked> JavaScript</label>
       </div>
       <div class="two">
         <div class="layers-preview" id="layers-preview"><h3>Your small garden</h3><p>HTML supplies the content. CSS changes its presentation. JavaScript can make a watering button respond.</p></div>
-        <ol class="layer-list"><li><strong>HTML gives structure.</strong><br><span class="muted">Headings, paragraphs, links, and controls.</span></li><li><strong>CSS gives presentation.</strong><br><span class="muted">Fonts, spacing, colors, and layout.</span></li><li><strong>Images bring their own data.</strong><br><span class="muted">One failed image does not necessarily break the page.</span></li><li><strong>JavaScript adds this demo’s behavior.</strong><br><span class="muted">Click “Water the plant.” Without its script, this particular button does nothing.</span></li></ol>
+        <div class="concept-grid">
+          <div class="concept-card"><h3>HTML</h3><p>Structure: headings, links, controls.</p></div>
+          <div class="concept-card"><h3>CSS</h3><p>Presentation: fonts, colors, layout.</p></div>
+          <div class="concept-card"><h3>JavaScript</h3><p>Behavior: this demo’s watering button.</p></div>
+        </div>
       </div>
-      <figcaption>Fig. 7 — Remove one resource and see what remains. The preview is a controlled illustration, not a second real webpage load.</figcaption>
+      <figcaption>A missing image need not break the page.</figcaption>
     </figure>
-    <p class="takeaway">One page often means many requests. The browser assembles the result.</p>
-    <details><summary>Does the browser wait until everything finishes?</summary><p>No. It can discover resources while parsing HTML, fetch several resources concurrently, and show content before everything is ready. Some stylesheets and scripts can delay rendering or parsing. Our stepper separates these activities so you can see their roles.</p><p>Not all interactivity needs JavaScript: links, native form submission, and expandable <code>details</code> elements can work without it. JavaScript powers the custom watering action in this example.</p></details>
+    <p class="takeaway">One page often means many requests.</p>
+    <details><summary>Model notes</summary><p>The preview is a controlled illustration, not another webpage load. Images carry separate data; scripts can handle events and change the document.</p><p>The browser need not wait for everything: it can discover resources while parsing HTML, fetch several concurrently, and show content early. Some stylesheets and scripts can delay rendering or parsing. Our stepper separates these activities so you can see their roles.</p><p>Not all interactivity needs JavaScript: links, native form submission, and expandable <code>details</code> elements can work without it. JavaScript powers the custom watering action in this example.</p></details>
     <details><summary>Why is a repeat visit sometimes faster—or out of date?</summary><p>A browser may reuse fresh cached CSS, images, and scripts instead of downloading them again. A stale response can sometimes be validated with the server; a <code>304 Not Modified</code> response lets the browser reuse its cached body.</p><p>Our repeat-visit preset assumes a usable DNS answer and fresh cached assets, but fetches the HTML again over a new connection. Real cache behavior depends on headers and browser state. <code>Cache-Control: no-cache</code> means validate before reuse, not “never store.”</p></details>
   </section>
 
-  <section id="sessions" class="section" aria-labelledby="sessions-title">
+  <section id="sessions" class="section" aria-labelledby="sessions-title" data-tab-label="Sessions" data-tab-note="Remember sign-in">
     <div class="eyebrow">One more request · Cookies &amp; authentication</div>
-    <h2 id="sessions-title">How does the site remember you signed in?</h2>
-    <p>HTTP requests do not inherently share a signed-in identity. In a common session-based design, the server gives the browser an opaque session ID after checking a sign-in. A cookie carries that ID on later matching requests.</p>
+    <h2 id="sessions-title">Remember a sign-in.</h2>
+    <p>HTTP has no built-in signed-in identity. Here, the server issues a session ID after sign-in; a cookie carries it on later matching requests.</p>
     <figure class="panel">
       <div class="toolbar js-only">
         <button type="button" id="sign-in">Simulate successful sign-in</button><button type="button" id="account">Request /account</button><button type="button" id="expire" disabled>Expire server session</button><button type="button" id="sign-out" disabled>Sign out</button>
       </div>
       <div class="two session-board">
-        <div class="session-state"><h3>Browser</h3><code id="cookie-state">No session cookie</code><p>A cookie is a stored name/value pair with rules controlling when it is sent.</p></div>
-        <div class="session-state"><h3>Server</h3><code id="server-state">No active session</code><p>The session record links an opaque ID to a user and an expiration.</p></div>
+        <div class="session-state"><h3>Browser</h3><code id="cookie-state">No session cookie</code><p>Stores a name/value pair with sending rules.</p></div>
+        <div class="session-state"><h3>Server</h3><code id="server-state">No active session</code><p>Links an opaque ID to a user and expiry.</p></div>
       </div>
       <p id="auth-result" role="status">Try requesting /account before signing in.</p>
       <pre id="auth-wire">No request yet.</pre>
-      <figcaption>Fig. 8 — Having a cookie is not enough: the server must still accept the session it identifies.</figcaption>
+      <figcaption>A cookie works only while the server accepts its session.</figcaption>
     </figure>
-    <p class="note">This toy login assumes credentials were checked successfully. It never asks for a password, sets a real cookie, or stores anything. All demo state disappears on reload.</p>
-    <div class="two" style="margin-top:var(--s-5)">
-      <div><h3>Cookie ≠ password</h3><p class="small muted">The demo cookie holds a session identifier, not a password. Treat real session IDs as secrets: a stolen valid ID can let someone impersonate a user. Cookies can also store preferences and are not always used for login.</p></div>
-      <div><h3>Authentication ≠ authorization</h3><p class="small muted">Authentication checks who you are. Authorization checks what you may do. Being signed in does not automatically grant access to another person’s files or an administrator’s controls.</p></div>
+    <div class="concept-grid" style="margin-top:var(--s-5)">
+      <div class="concept-card"><h3>Cookie ≠ password</h3><p>This cookie holds a session ID. Keep real IDs secret: theft can enable impersonation.</p></div>
+      <div class="concept-card"><h3>Identity ≠ permission</h3><p>Authentication: who are you? Authorization: what may you do?</p></div>
     </div>
+    <details><summary>Model notes</summary><p>This toy login assumes credentials passed. It never requests a password, sets a real cookie, or persists state; reloading clears the demo. Cookies can also store preferences, not just session IDs.</p><p>Being signed in does not grant access to other users’ files or administrator controls. The server must check permissions separately.</p></details>
     <details><summary>What do Secure, HttpOnly, and SameSite mean?</summary><p><code>Secure</code> restricts the cookie to secure transport in normal use. <code>HttpOnly</code> prevents page JavaScript from reading it through <code>document.cookie</code>; the browser can still send it with requests.</p><p><code>SameSite</code> controls sending in cross-site contexts and helps limit some cross-site request forgery (CSRF) attacks. It is not a complete security solution. Domain and path rules also affect which requests receive a cookie.</p><p>The response uses <code>Set-Cookie</code> to store a cookie. Later requests use <code>Cookie</code> to send matching name/value pairs. The cookie’s attributes are not repeated in that request header.</p></details>
     <details><summary>Are cookies the only way to authenticate?</summary><p>No. Applications can use other credentials, including bearer tokens in an <code>Authorization</code> header. Passkeys, passwords, and identity providers are different ways to establish identity. This guide illustrates only one common server-side session design.</p><p>A real sign-in system also needs safe credential handling, session rotation, expiry, server-side permission checks, and defenses against attacks. This demo is not a login implementation to copy into a product.</p></details>
   </section>
 
   <footer aria-labelledby="sources-title">
-    <h2 id="sources-title">Keep the mental model. Explore the details.</h2>
-    <p>A name finds an address. A connection carries an HTTP exchange. Resources become a page. A later request can carry a session cookie—but the server still decides what to allow.</p>
-    <h3 style="margin-top:var(--s-5)">Sources &amp; further reading</h3>
+    <h2 id="sources-title">Keep the model.</h2>
+    <p>Name → address → connection → HTTP → pixels. Sessions connect later requests.</p>
+    <details><summary>Sources &amp; further reading</summary>
     <ul class="source-list">
       <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Web_standards/How_the_web_works">MDN — How the web works</a></li>
       <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name">MDN — Domain names and DNS</a></li>
@@ -382,7 +384,8 @@ Content-Type: text/html
       <li><a href="https://letsencrypt.org/how-it-works/">Let’s Encrypt — Domain validation and certificates</a></li>
       <li><a href="https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/How_browsers_work">MDN — How browsers work</a></li>
     </ul>
-    <p class="small muted">AI-generated learning aid. Protocols and browsers have more detail than this model shows. Times, server responses, session IDs, and resources are illustrative. Verify important details against the sources.</p>
+    </details>
+    <details><summary>Model notes</summary><p>AI-generated learning aid. Protocols and browsers have more detail than this model shows. Times, server responses, session IDs, and resources are illustrative. Verify important details against the sources.</p></details>
   </footer>
 </main>
 <script>
@@ -571,5 +574,6 @@ Content-Type: text/html
   document.documentElement.classList.add('ready');
 })();
 </script>
+<script src="assets/guide-layout.js"></script>
 </body>
 </html>

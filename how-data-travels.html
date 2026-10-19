@@ -184,38 +184,38 @@
   </style>
   <link rel="stylesheet" href="assets/shared.css">
 </head>
-<body>
+<body data-guide="network">
 <a class="skip-link" href="#main">Skip to guide</a>
 <nav class="site-nav" aria-label="Collection"><div class="site-nav-inner"><a class="site-home" href="index.html">← Interactive Guides</a></div></nav>
 <main id="main">
   <header>
-    <div class="eyebrow">Internet Fundamentals · Interactive Guide</div>
+    <div class="eyebrow">Internet Fundamentals</div>
     <h1>How data travels across the internet</h1>
-    <p class="lead">Your message shares links with other people’s traffic. Small packets take turns; the receiver puts useful data back together.</p>
+    <p class="lead">Packets share links. Follow their journey from sender to app.</p>
     <nav class="section-nav" aria-label="Guide sections"><a href="#experiment">Move the packets</a><a href="#pieces">Smaller pieces</a><a href="#routes">Routes</a><a href="#delay">Speed &amp; waiting</a><a href="#delivery">Loss &amp; ordering</a><a href="#applications">Different needs</a><a href="#realtime">Real-time chat</a></nav>
-    <p class="small muted" style="margin-top:var(--s-4)">A companion to <a href="how-the-web-works.html">What happens when you open a website?</a> That guide follows the browser; this one follows the data.</p>
+    <p class="small muted" style="margin-top:var(--s-4)">Browser basics: <a href="how-the-web-works.html">What happens when you open a website?</a></p>
     <noscript>The demos need JavaScript. The explanations, diagrams, and sources remain readable without it.</noscript>
     <p id="model-error" hidden>The simulator could not load. Keep <code>assets/network-model.js</code> alongside this guide’s other assets.</p>
   </header>
 
-  <section id="experiment" class="section" aria-labelledby="experiment-title">
+  <section id="experiment" class="section" data-tab-label="Packet lab" data-tab-note="Share a link" aria-labelledby="experiment-title">
     <div class="eyebrow">Try the mechanism</div>
-    <h2 id="experiment-title" tabindex="-1">One shared link. Many small turns.</h2>
-    <p>A packets belong to your 2,400-byte transfer. B packets belong to another sender. Start with a quiet link, then add traffic or lose a packet.</p>
+    <h2 id="experiment-title" tabindex="-1">Share one link.</h2>
+    <p>A = your 2,400 bytes. B = other traffic. Try sharing, loss, or delay.</p>
     <div class="toolbar js-only">
-      <label class="control">Network preset<select id="preset"><option value="clean">Quiet link</option><option value="shared">Shared link</option><option value="distance">Long travel time</option><option value="loss">Lose A2 once</option><option value="reorder">Delay A1</option><option value="busy">Busy link + loss</option><option value="custom">Custom settings</option></select></label>
-      <label class="control">Delivery model<select id="transport"><option value="tcp">TCP-style ordered stream</option><option value="udp">UDP-style datagrams</option></select></label>
+      <label class="control">Network preset<select id="preset" data-choice><option value="clean">Quiet link</option><option value="shared">Shared link</option><option value="distance">Long travel time</option><option value="loss">Lose A2 once</option><option value="reorder">Delay A1</option><option value="busy">Busy link + loss</option><option value="custom">Custom settings</option></select></label>
+      <label class="control">Delivery model<select id="transport" data-choice><option value="tcp">TCP-style ordered stream</option><option value="udp">UDP-style datagrams</option></select></label>
     </div>
     <details id="settings" class="js-only"><summary>Change packet size and network conditions</summary>
       <div class="controls">
-        <label class="control">Payload per A packet<select id="payload"><option value="300">300 bytes</option><option value="600" selected>600 bytes</option><option value="1200">1,200 bytes</option></select></label>
+        <label class="control">Payload per A packet<select id="payload" data-choice><option value="300">300 bytes</option><option value="600" selected>600 bytes</option><option value="1200">1,200 bytes</option></select></label>
         <div class="control"><label for="capacity">Link capacity</label><output id="capacity-value" for="capacity">96 kbit/s</output><input id="capacity" type="range" min="24" max="192" step="24" value="96"></div>
         <div class="control"><label for="propagation">One-way travel time</label><output id="propagation-value" for="propagation">60 ms</output><input id="propagation" type="range" min="20" max="300" step="20" value="60"></div>
-        <label class="control">B packets between A packets<select id="competing"><option value="0">None</option><option value="1">One</option><option value="2">Two</option></select></label>
+        <label class="control">B packets between A packets<select id="competing" data-choice><option value="0">None</option><option value="1">One</option><option value="2">Two</option></select></label>
         <label class="checkbox"><input type="checkbox" id="loss"> Lose A2’s first attempt</label>
         <label class="checkbox"><input type="checkbox" id="reorder"> Give A1 extra travel delay</label>
       </div>
-      <p class="small muted">Changing a setting restarts the experiment and updates the packet-size and delay figures. Section 5 has its own scenario controls. Low capacities and a tiny transfer keep the arithmetic visible; these are not typical internet speeds.</p>
+      <p class="small muted">Changes restart this lab and update Packet size and Delay. App outcomes has independent controls.</p>
     </details>
     <figure class="panel" style="margin-top:var(--s-5)">
       <div class="network-lanes">
@@ -224,33 +224,33 @@
         <div class="lane"><h3>3. Receiver A</h3><p class="lane-note">Waiting for an earlier piece</p><div class="packet-tray" id="buffer"><span class="empty">Nothing buffered</span></div><p class="lane-note">Available to the application</p><div class="packet-tray" id="delivered"><span class="empty">No data delivered yet</span></div></div>
       </div>
       <div class="legend"><span>Solid A: your data</span><span>Dashed B: competing traffic</span><span>Dashed A: waiting for earlier bytes</span><span id="lost-state">Lost attempts: none</span></div>
-      <div class="event-callout"><div class="label" id="event-number">Ready · 0 ms</div><h3 id="event-title">Packets wait for their turn.</h3><p id="event-description">A router forwards each packet onto a link. That link can carry other conversations between your packets.</p></div>
+      <div class="event-callout"><div class="label" id="event-number">Ready · 0 ms</div><h3 id="event-title">Packets wait for their turn.</h3><p id="event-description">The router sends one packet at a time. Other traffic shares the link.</p></div>
       <div class="toolbar play-controls js-only"><button type="button" id="back" disabled>← Back</button><button type="button" id="next">Next event →</button><button type="button" id="play" aria-pressed="false">Play events</button><button type="button" id="finish">Jump to result</button><button type="button" id="reset">Start over</button></div>
       <p class="small muted" id="sim-status" role="status" style="margin-top:var(--s-3)">Ready to step through the transfer.</p>
       <div class="metrics"><div class="metric"><strong id="metric-time">0 ms</strong><span>modeled elapsed time</span></div><div class="metric"><strong id="metric-data">0 / 2,400 B</strong><span>A payload available to the app</span></div><div class="metric"><strong id="metric-flight">0 packets</strong><span>travelling after transmission</span></div></div>
-      <figcaption>Fig. 1 — Serialization uses the link; propagation does not keep it occupied. Later packets can be transmitted while earlier ones are still travelling.</figcaption>
+      <figcaption>Fig. 1 — Transmission occupies the link; travel does not. Simplified model, not real TCP timing.</figcaption>
     </figure>
-    <details><summary>What this model includes—and deliberately leaves out</summary><p>One output queue, one outgoing link, fixed travel time, and a burst already at the router. B packets have the same size as A packets and a predetermined interleaving. Real routers do not promise this scheduling pattern.</p><p>The loss switch drops A2 once in transit. The delay switch adds extra travel time to A1 to demonstrate reordering. Neither is a claim that internet packets normally take random paths.</p><p>The TCP-style model retries A2 after a toy timeout of 1,000 ms from the end of its initial transmission. The retry joins the same queue. Actual TCP uses acknowledgments, adaptive loss detection, flow control, and congestion control; these are not simulated. ACK traffic, connection setup, other hops, and link-layer overhead are omitted.</p><p>Both models use the same illustrative 40-byte header allowance so the comparison isolates delivery behavior. Real TCP and UDP overhead differs. Event playback advances one event per beat, not in real-time proportion to the modeled clock.</p></details>
+    <details><summary>Model notes</summary><p>One queue, one link, fixed travel time, and a burst already at the router. B packets match A’s size and use predetermined interleaving—not a real scheduling guarantee. Low capacities keep the arithmetic readable.</p><p>Loss drops A2 once; delay adds travel time to A1. Packets do not normally take random paths.</p><p>The TCP-style retry joins the queue 1,000 ms after A2’s first transmission ends. Actual TCP uses acknowledgments, adaptive loss detection, flow control, and congestion control. Those mechanisms, setup, other hops, and link-layer overhead are omitted.</p><p>Both transports use an illustrative 40-byte header; real overhead differs. Playback advances one event per beat, not in proportion to modeled time.</p></details>
   </section>
 
-  <section id="pieces" class="section" aria-labelledby="pieces-title">
+  <section id="pieces" class="section" data-tab-label="Packet size" data-tab-note="Payload and overhead" aria-labelledby="pieces-title">
     <div class="eyebrow">1 · A message becomes pieces</div>
-    <h2 id="pieces-title">Smaller pieces can share the link—but need more headers.</h2>
-    <p>A packet carries payload plus information used to deliver it. Splitting a transfer lets packets from different senders take turns instead of reserving the whole path for one message.</p>
+    <h2 id="pieces-title">Smaller packets, more headers.</h2>
+    <div class="concept-grid"><div class="concept-card"><h3>Payload</h3><p>Your useful data, split into pieces.</p></div><div class="concept-card"><h3>Header</h3><p>Delivery information repeated for each packet.</p></div><div class="concept-card"><h3>Trade-off</h3><p>Smaller pieces take shorter turns but add overhead.</p></div></div>
     <figure class="panel">
       <h3 id="packet-summary">2,400 bytes of content → 4 payload pieces</h3>
       <div class="packet-batch" id="packet-batch"></div>
       <div class="overhead-bar" aria-hidden="true"><div class="payload-total" id="payload-total" style="width:93.75%"></div><div class="headers-total" id="headers-total" style="width:6.25%"></div></div>
       <p class="small" id="overhead-label" style="margin-top:var(--s-3)">Payload: 2,400 B · illustrative headers: 160 B · total: 2,560 B</p>
       <div class="toolbar js-only" style="margin-top:var(--s-4)"><button type="button" data-size="300">Try 300-byte payloads</button><button type="button" data-size="1200">Try 1,200-byte payloads</button></div>
-      <figcaption>Fig. 2 — The payload stays the same. Smaller pieces mean more header overhead and shorter individual transmission turns.</figcaption>
+      <figcaption>Fig. 2 — Same payload; different overhead. Headers here are illustrative.</figcaption>
     </figure>
-    <details><summary>Is a message the same as a packet?</summary><p>No. An application defines messages. TCP carries a byte stream and divides bytes into segments; IP carries packets; link technologies carry frames. Each layer has its own information and boundaries.</p><p>A TCP write does not necessarily become one segment or one read at the receiver. Applications need their own way to mark message boundaries. UDP preserves datagram boundaries, but a UDP datagram is still carried inside IP.</p><p>The A1/A2 labels in this guide identify successive groups of data, not real TCP message numbers. Packet sizes are also constrained by maximum transmission units (MTUs); arbitrarily large packets are not a free optimization.</p></details>
+    <details><summary>Model notes</summary><p>Messages belong to applications; TCP carries a byte stream in segments, IP carries packets, and links carry frames. A TCP write need not equal one segment or read. Applications must mark message boundaries; UDP preserves datagram boundaries.</p><p>A1/A2 label data groups, not TCP message numbers. Maximum transmission units (MTUs) constrain real packet sizes.</p></details>
   </section>
 
-  <section id="routes" class="section" aria-labelledby="routes-title">
+  <section id="routes" class="section" data-tab-label="Routes" data-tab-note="Choose a next hop" aria-labelledby="routes-title">
     <div class="eyebrow">2 · A network of networks</div>
-    <h2 id="routes-title">Routers choose the next hop, not a private wire.</h2>
+    <h2 id="routes-title">Choose the next hop.</h2>
     <figure class="panel">
       <div class="toolbar js-only"><label class="checkbox"><input type="checkbox" id="route-failure"> Primary link unavailable; routes have adapted</label></div>
       <div class="diagram-scroll" tabindex="0" role="region" aria-label="Routing illustration; scroll horizontally on small screens">
@@ -269,17 +269,18 @@
           <text class="sub" x="400" y="150" text-anchor="middle" id="route-label">Primary route selected</text>
         </svg>
       </div>
-      <p id="route-status" role="status" class="small muted">Routers use forwarding information to choose a next hop. This flow follows the primary route.</p>
-      <figcaption>Fig. 3 — Packet switching shares links. Routing determines which links a packet uses. These are related, but different, ideas.</figcaption>
+      <p id="route-status" role="status" class="small muted">Forwarding information selects the next hop. This flow uses the primary route.</p>
+      <figcaption>Fig. 3 — Routing chooses links; packet switching shares them.</figcaption>
     </figure>
-    <p class="note">The routing picture is separate from the single-link experiment. Real route changes take time and can temporarily lose packets. A flow often keeps a stable path; alternate paths are possible, not mandatory for every packet.</p>
-    <details><summary>How is this different from circuit switching?</summary><p>A circuit-switched system reserves resources along a path for a conversation. Packet switching lets many conversations share link capacity as packets arrive. That flexibility also means waiting and congestion when demand exceeds available capacity.</p><p>The internet is not one central router. Network operators exchange routing information, and routers forward packets using the information available to them. A chosen route need not be the geographically shortest one.</p></details>
+    <p class="note">Separate illustration: real route changes take time and may lose packets.</p>
+    <div class="concept-grid"><div class="concept-card"><h3>Packet switching</h3><p>Conversations share capacity, sometimes waiting.</p></div><div class="concept-card"><h3>Circuit switching</h3><p>A conversation reserves resources along a path.</p></div></div>
+    <details><summary>Model notes</summary><p>A flow often keeps a stable path; alternate routes are possible, not mandatory per packet. Operators exchange routing information. Each router chooses a next hop, not necessarily the geographically shortest path. This picture does not change the packet lab.</p></details>
   </section>
 
-  <section id="delay" class="section" aria-labelledby="delay-title">
+  <section id="delay" class="section" data-tab-label="Delay" data-tab-note="Capacity versus travel" aria-labelledby="delay-title">
     <div class="eyebrow">3 · Bandwidth, latency &amp; congestion</div>
-    <h2 id="delay-title">More capacity does not make the signal travel faster.</h2>
-    <p><strong>Capacity</strong> is how many bits a link can transmit per second. <strong>Propagation delay</strong> is how long a signal takes to travel. <strong>Queueing delay</strong> is waiting for an occupied link.</p>
+    <h2 id="delay-title">Capacity is not travel speed.</h2>
+    <div class="concept-grid"><div class="concept-card"><h3>Capacity</h3><p>Bits transmitted per second.</p></div><div class="concept-card"><h3>Propagation</h3><p>Time spent travelling.</p></div><div class="concept-card"><h3>Queueing</h3><p>Time waiting for the link.</p></div></div>
     <figure class="panel">
       <div class="toolbar js-only"><button type="button" id="double-capacity">Double link capacity</button><button type="button" id="add-distance">Add 100 ms travel time</button><button type="button" id="reset-network">Reset network</button></div>
       <p class="small muted" id="delay-settings" style="margin-top:var(--s-4)">96 kbit/s capacity · 60 ms one-way propagation</p>
@@ -288,75 +289,75 @@
         <div><h3>A small file · 240,000 B</h3><strong class="delay-number" id="large-delay">20,060 ms</strong><div class="delay-bar" aria-hidden="true"><div class="serialize-part" id="large-serialize" style="width:99.7%"></div><div class="propagate-part" id="large-propagate" style="width:.3%"></div></div><div class="delay-labels" id="large-breakdown">20,000 ms serialization + 60 ms propagation</div></div>
       </div>
       <div class="formula">ideal one-hop transfer time = (bytes × 8 ÷ link bits/second) + one-way propagation</div>
-      <figcaption>Fig. 4 — Each bar shows the split within its own total, not a shared time scale: accent = serialization, gray = propagation. This estimate omits headers, queueing, setup, and other hops.</figcaption>
+      <figcaption>Fig. 4 — Separate scales: accent = transmission; gray = travel. Ideal estimate only.</figcaption>
     </figure>
-    <p class="takeaway">A faster download and a more responsive conversation are not the same thing.</p>
-    <details><summary>What changes when the network is busy?</summary><p>Packets wait behind other packets at an outgoing link. More waiting increases latency without changing the link’s propagation time. If a finite buffer fills, packets can be dropped. Your application’s throughput can be below the link’s capacity.</p><p>Try “Shared link” or “Busy link + loss” above. Competing packets extend the queue; the explicit loss switch is a separate controlled failure, not a simulated buffer-overflow algorithm.</p><p>Latency is a broad term. Round-trip time (RTT) includes the trip out and back, plus other delays. The travel-time slider here describes only one-way propagation on the modeled link.</p></details>
+    <p class="takeaway">Faster downloads do not guarantee quicker replies.</p>
+    <details><summary>Model notes</summary><p>The estimate omits headers, queueing, setup, and other hops. Each bar uses its own total, not a shared time scale.</p><p>Busy links add queueing delay; full buffers can drop packets. App throughput can be below link capacity. The lab’s loss switch is a controlled failure, not simulated buffer overflow.</p><p>Round-trip time includes both directions and other delays. This slider controls only one-way propagation.</p></details>
   </section>
 
-  <section id="delivery" class="section" aria-labelledby="delivery-title">
+  <section id="delivery" class="section" data-tab-label="TCP / UDP" data-tab-note="Order and recovery" aria-labelledby="delivery-title">
     <div class="eyebrow">4 · Loss &amp; ordering</div>
-    <h2 id="delivery-title">Arrival order is not always delivery order.</h2>
-    <div class="two">
-      <div class="panel"><h3>TCP: an ordered byte stream</h3><p>The receiver can buffer later bytes while an earlier gap remains. The sender detects loss and retransmits. The application receives bytes in order.</p><p class="small muted">The cost can be waiting: later data in that stream cannot skip missing earlier bytes. Persistent failures can still terminate the connection.</p></div>
-      <div class="panel"><h3>UDP: individual datagrams</h3><p>UDP itself does not recover missing datagrams or order them. The application receives what arrives and decides what to do next.</p><p class="small muted">That does not force applications to ignore losses. They can add sequence information, recovery, congestion control, and other behavior.</p></div>
+    <h2 id="delivery-title">Arrival ≠ app delivery.</h2>
+    <div class="concept-grid">
+      <div class="concept-card"><h3>TCP: ordered bytes</h3><p>Retransmits losses. Later bytes wait behind gaps. Persistent failure can end the connection.</p></div>
+      <div class="concept-card"><h3>UDP: datagrams</h3><p>No built-in recovery or ordering. Apps can add both, plus congestion control.</p></div>
     </div>
     <div class="toolbar js-only" style="margin-top:var(--s-5)"><button type="button" id="try-loss">Try loss + TCP</button><button type="button" id="try-udp">Same loss + UDP</button><button type="button" id="try-reorder">Try out-of-order TCP</button><a href="#experiment">Inspect the packet journey ↑</a></div>
-    <p class="note">These buttons select the scenario and take you to its completed result in the experiment above. Use Back or Start over to inspect intermediate states.</p>
-    <details><summary>What about QUIC and HTTP/3?</summary><p>QUIC runs over UDP but adds secure connections, loss recovery, congestion control, and reliable ordered streams. “Uses UDP” does not mean “the application accepts unreliable delivery.”</p><p>Ordering is per QUIC stream. Missing data on one stream need not block delivery on another, although the streams still share network resources. HTTP/3 uses QUIC; it does not eliminate latency or congestion.</p></details>
-    <details><summary>Does a TCP acknowledgment mean a message was read?</summary><p>No. Transport acknowledgment means the receiving transport has acknowledged bytes. It does not prove the application processed them, saved a file, or showed a chat message to a person. Applications need their own receipts for those meanings.</p></details>
+    <p class="note">Opens the lab’s result. Back or Start over reveals the journey.</p>
+    <details><summary>Model notes</summary><p>QUIC runs over UDP but adds security, recovery, congestion control, and ordered streams. Missing data on one stream need not block another. HTTP/3 uses QUIC; network delay still applies.</p><p>A TCP acknowledgment confirms transport receipt—not app processing, saving, or human reading. Those need application-level receipts.</p></details>
   </section>
 
-  <section id="applications" class="section" aria-labelledby="applications-title">
-    <div class="eyebrow">5 · Different applications, different priorities</div>
-    <h2 id="applications-title">A complete file. A complete message. Audio before its deadline.</h2>
-    <p>Choose a scenario here to compare both delivery models on the same network. This comparison is independent of the packet experiment above. Try losing A2 to see completeness and timeliness pull in different directions.</p>
+  <section id="applications" class="section" data-tab-label="App outcomes" data-tab-note="Complete or on time?" aria-labelledby="applications-title">
+    <div class="eyebrow">5 · App priorities</div>
+    <h2 id="applications-title">Complete, or on time?</h2>
+    <p>Compare both transports on one network. These presets are independent of the lab. Try losing A2.</p>
     <figure class="panel">
       <div class="toolbar js-only" style="margin-bottom:var(--s-4)">
-        <label class="control">Comparison scenario<select id="comparison-preset"><option value="clean">Quiet link</option><option value="shared">Shared link</option><option value="distance">Long travel time</option><option value="loss">Lose A2 once</option><option value="reorder">Delay A1</option><option value="busy">Busy link + loss</option></select></label>
+        <label class="control">Comparison scenario<select id="comparison-preset" data-choice><option value="clean">Quiet link</option><option value="shared">Shared link</option><option value="distance">Long travel time</option><option value="loss">Lose A2 once</option><option value="reorder">Delay A1</option><option value="busy">Busy link + loss</option></select></label>
       </div>
       <p id="comparison-settings" class="small muted" style="margin-bottom:var(--s-5)">600-byte payloads · 96 kbit/s capacity · 60 ms one-way travel time</p>
-      <p id="comparison-insight" class="small" hidden>Delaying A1 changes the journey, not necessarily the final score. A2 and A3 arrive first: TCP holds them until A1 arrives; UDP exposes them immediately. Here, A1 catches up before the last piece arrives, and all chunks still meet their playback deadlines. Completion times and audio scores therefore match the quiet link.</p>
+      <p id="comparison-insight" class="small" hidden>A2/A3 arrive before A1: TCP holds them; UDP releases them. A1 catches up before completion and all deadlines, so final scores match the quiet link. Compare arrival, release, and waiting below.</p>
       <div class="two" id="application-comparison"><div><h3>TCP-style stream</h3><p>Recovers the modeled lost piece, but later bytes wait behind it.</p></div><div><h3>UDP-style datagrams</h3><p>Later pieces can reach the application without waiting for recovery.</p></div></div>
-      <figcaption>Fig. 5 — The bare UDP comparison adds no recovery. Real applications can add it. Neither transport is universally better.</figcaption>
+      <figcaption>Fig. 5 — Bare UDP adds no recovery here. Real apps can.</figcaption>
     </figure>
-    <p class="note">The media example treats this tiny burst as numbered audio chunks already available to send. Chunk 1 is due at 300 ms, then one every 150 ms. Solid slots were available to the application by their deadlines; dashed slots were missing or became available too late. These invented deadlines illustrate playout, not a complete live-call model.</p>
-    <details><summary>Why not just use UDP for every live application?</summary><p>A real media application still needs to handle variable delay, loss, network congestion, and security. Jitter buffers delay playback slightly to absorb timing variation. Missing audio may be concealed, recovered, or skipped depending on the deadline.</p><p>A download normally needs every byte. A chat application usually needs complete messages, prompt delivery, and application-level receipts. A live call also cares whether data arrives while it is still useful. Protocol choice depends on all of these needs.</p></details>
+    <p class="note">Toy audio deadlines: solid = app-ready on time; dashed = late or missing.</p>
+    <details><summary>Model notes</summary><p>All numbered audio chunks are ready to send initially. Chunk 1 is due at 300 ms, then one every 150 ms. These invented deadlines illustrate playout, not a complete live call.</p><p>Real media needs security, congestion handling, and jitter buffers. Missing audio may be concealed, recovered, or skipped. Files need every byte; chat needs complete messages and app receipts; calls also need timely data. No transport wins universally.</p></details>
   </section>
 
-  <section id="realtime" class="section" aria-labelledby="realtime-title">
-    <div class="eyebrow">The payoff · Chat without refreshing</div>
-    <h2 id="realtime-title">Who gets to speak next?</h2>
-    <p>Packet switching moves data. Web messaging patterns decide when the application sends it. Compare repeated questions with a channel that stays open.</p>
+  <section id="realtime" class="section" data-tab-label="Live messages" data-tab-note="Ask or push" aria-labelledby="realtime-title">
+    <div class="eyebrow">6 · Chat without refreshing</div>
+    <h2 id="realtime-title">Ask repeatedly, or stay open?</h2>
+    <p>Packets move data. Messaging patterns decide when to send it.</p>
     <figure class="panel" id="rt-player">
       <div class="toolbar js-only" aria-label="Messaging pattern"><button type="button" data-mode="poll" aria-pressed="true">Polling</button><button type="button" data-mode="sse" aria-pressed="false">Server-Sent Events</button><button type="button" data-mode="ws" aria-pressed="false">WebSocket</button></div>
-      <p id="rt-description">Polling: the browser asks for updates every five seconds. An update waits for the next question. Existing HTTP connections can be reused.</p>
-      <p class="small muted">Follow a ten-second order conversation. Switch protocols at any moment to compare the <strong>same story at the same time</strong>.</p>
+      <p id="rt-description">Polling asks every five seconds. Updates wait for the next request.</p>
+      <p class="small muted">Switch protocols to compare the <strong>same moment</strong> in a ten-second conversation.</p>
       <div class="toolbar rt-controls js-only"><button type="button" id="rt-back" disabled>← Back</button><button type="button" id="rt-tick">Next step →</button><button type="button" id="rt-play" aria-pressed="false">Autoplay</button><button type="button" id="rt-reset">Restart story</button></div>
       <div class="rt-timeline js-only js-grid" id="rt-timeline" aria-label="Inspect a moment in the story"></div>
-      <div class="rt-caption"><div class="label" id="rt-step-label">Story begins · 0 s</div><h3 id="rt-event-title">Open the conversation.</h3><p id="rt-status" role="status">Press Autoplay or Next step. At 1 s, the shop will say your order is ready. Will your browser receive it yet?</p></div>
+      <div class="rt-caption"><div class="label" id="rt-step-label">Story begins · 0 s</div><h3 id="rt-event-title">Open the conversation.</h3><p id="rt-status" role="status">Press Autoplay or Next step. The shop has news at 1 s—when will you see it?</p></div>
       <div class="rt-scene">
         <div class="rt-endpoint" id="rt-browser-endpoint"><h3>Your browser</h3><p class="small muted">Updates received from the shop · latest 4</p><ol class="rt-inbox" id="rt-browser-inbox"><li class="empty">No updates received yet.</li></ol><p class="small muted" id="rt-browser">No browser messages sent.</p></div>
         <div class="rt-channel"><p id="rt-channel-label">Repeated HTTP requests</p><div class="rt-track" id="rt-track" data-flow="idle" aria-hidden="true"><span class="rt-token">HTTP</span></div><p id="rt-flow-label">Browser asks → server answers</p><div class="rt-countdown" id="rt-countdown"><label for="rt-poll-progress" id="rt-poll-label">Next poll in 5 s</label><progress id="rt-poll-progress" max="5" value="0"></progress></div></div>
         <div class="rt-endpoint" id="rt-server-endpoint"><h3>Shop server</h3><p class="small muted">Messages received from you · latest 4</p><ol class="rt-inbox" id="rt-server-inbox"><li class="empty">No browser messages received yet.</li></ol><p class="rt-pending" id="rt-pending">No updates waiting to be sent.</p><p class="small muted" id="rt-server" style="margin-top:var(--s-2)">No server updates created.</p></div>
       </div>
       <div class="metrics"><div class="metric"><strong id="rt-clock">0 s</strong><span>simulated story time</span></div><div class="metric"><strong id="rt-requests">1</strong><span>HTTP requests / opening handshakes</span></div><div class="metric"><strong id="rt-wait">—</strong><span>last delivered update’s application wait</span></div></div>
-      <details class="js-only" id="rt-custom"><summary>Try your own messages</summary><p class="small">Sending a message pauses playback and inserts it at the current moment. Next step continues the story. Restart clears your additions.</p><div class="two" style="margin-top:var(--s-4)"><div class="control"><label for="rt-server-text">Shop’s update</label><input class="rt-custom-input" id="rt-server-text" type="text" maxlength="120" value="Your order is ready."><button type="button" id="rt-update">Send from server</button></div><div class="control"><label for="rt-browser-text">Your message</label><input class="rt-custom-input" id="rt-browser-text" type="text" maxlength="120" value="Please add a receipt."><button type="button" id="rt-send">Send from browser</button></div></div></details>
+      <details class="js-only" id="rt-custom"><summary>Try your own messages</summary><p class="small">Send to pause and insert now. Next step continues; Restart clears additions.</p><div class="two" style="margin-top:var(--s-4)"><div class="control"><label for="rt-server-text">Shop’s update</label><input class="rt-custom-input" id="rt-server-text" type="text" maxlength="120" value="Your order is ready."><button type="button" id="rt-update">Send from server</button></div><div class="control"><label for="rt-browser-text">Your message</label><input class="rt-custom-input" id="rt-browser-text" type="text" maxlength="120" value="Please add a receipt."><button type="button" id="rt-send">Send from browser</button></div></div></details>
       <details><summary>Inspect the protocol log</summary><ol class="event-log" id="rt-log" aria-label="Recent messaging events"><li>GET /updates → no new messages. Next poll at 5 s.</li></ol><p class="small muted">Latest eight events. All earlier events remain part of the simulation.</p></details>
-      <p class="note">Playback advances one story step per beat. Moving tokens show direction, not real transmission speed. Network transit and processing are omitted to isolate application waiting; a displayed 0 s wait does not mean zero network latency. Packet settings above do not change this demo.</p>
-      <figcaption>Fig. 6 — Polling waits for a request; SSE streams server events; WebSocket lets both endpoints send messages on an ongoing channel.</figcaption>
+      <p class="note">0 s wait means no app waiting—not zero network latency. Independent of packet settings.</p>
+      <figcaption>Fig. 6 — Polling asks; SSE pushes; WebSocket sends both ways.</figcaption>
     </figure>
-    <div class="two" style="margin-top:var(--s-5)">
-      <div><h3>One-way events: SSE</h3><p class="small muted">The browser opens an HTTP event stream. The server sends updates through it. A browser action can use a separate HTTP POST—it need not create a separate physical connection.</p></div>
-      <div><h3>Two-way messages: WebSocket</h3><p class="small muted">After an opening handshake, either endpoint can send framed messages. A WebSocket message is not necessarily one network packet. A secure <code>wss://</code> connection also protects traffic with TLS.</p></div>
+    <div class="concept-grid" style="margin-top:var(--s-5)">
+      <div class="concept-card"><h3>Polling</h3><p>Browser asks; server answers. Connections can be reused.</p></div>
+      <div class="concept-card"><h3>SSE</h3><p>Server pushes events. Browser replies use separate HTTP requests.</p></div>
+      <div class="concept-card"><h3>WebSocket</h3><p>Either side sends on one channel. Messages are not individual packets.</p></div>
     </div>
-    <p class="takeaway">WebSockets remove the need to keep asking for updates. They do not remove network delay.</p>
-    <details><summary>Does WebSocket bypass TCP’s ordering delays?</summary><p>No. The classic WebSocket protocol runs over TCP. Missing earlier bytes can delay later WebSocket messages on that connection. WebSocket supplies message framing; TCP supplies the ordered byte stream underneath.</p><p>Polling does not necessarily establish a new TCP/TLS connection every time. SSE and WebSocket need connection management and recovery too. Reconnection alone does not guarantee that every missed message is replayed.</p><p>These are common patterns, not a complete catalog. Long polling, where the server holds a request until an update or timeout, is another option.</p></details>
+    <p class="takeaway">An open channel removes polling, not network delay.</p>
+    <details><summary>Model notes</summary><p>Playback advances one story step per beat. Tokens show direction, not speed. Transit and processing are omitted to isolate app waiting.</p><p>Classic WebSocket uses TCP: missing earlier bytes can delay later messages. WebSocket adds framing; <code>wss://</code> adds TLS protection.</p><p>A separate HTTP request need not create a new physical connection. All patterns need connection management; reconnecting does not guarantee replay. Long polling—holding a request until news or timeout—is another option.</p></details>
   </section>
 
   <footer aria-labelledby="sources-title">
     <h2 id="sources-title">Keep the layers separate.</h2>
-    <p>Packets share links. Routers choose next hops. Transport protocols shape delivery. Applications decide what data is useful—and when to send more.</p>
+    <p>Links carry packets. Routers choose hops. Transports shape delivery. Apps decide what matters.</p>
     <h3 style="margin-top:var(--s-5)">Sources &amp; further reading</h3>
     <ul class="sources">
       <li><a href="https://gaia.cs.umass.edu/kurose_ross/interactive/end-end-delay.php">Kurose &amp; Ross — Transmission and propagation delay</a></li>
@@ -368,7 +369,7 @@
       <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events">MDN — Server-Sent Events</a></li>
       <li><a href="https://www.rfc-editor.org/rfc/rfc6455">IETF RFC 6455 — WebSocket</a></li>
     </ul>
-    <p class="small muted">AI-generated learning aid. All transfers, messages, routes, and times are simulated locally. The demos do not open sockets or send network traffic. Verify important details against authoritative sources.</p>
+    <p class="small muted">AI-generated learning aid. Simulated locally; no demo traffic is sent. Verify important details with authoritative sources.</p>
   </footer>
 </main>
 <script src="assets/network-model.js"></script>
@@ -409,16 +410,16 @@
   }
   function eventText(snapshot) {
     const event = snapshot.event;
-    if (!event) return ['Packets wait for their turn.', 'This burst is already at the router. Start the outgoing link to move one packet at a time.'];
+    if (!event) return ['Packets wait for their turn.', 'The burst is at the router. Send one packet at a time.'];
     const packet = event.packet, label = packet.id;
-    if (event.type === 'send') return [label + ' starts transmission.', 'The router is putting this packet’s bits on the link. Other queued packets wait; already-transmitted packets can keep travelling.'];
-    if (event.type === 'depart') return [label + ' is now travelling.', 'Its last bit has left the router. The link can start another packet without waiting for this one to reach its destination.'];
-    if (event.type === 'drop') return ['A2’s first attempt is lost.', run.settings.transport === 'tcp' ? 'The receiver never gets these bytes. Our TCP-style model will retry after its fixed teaching timeout.' : 'UDP itself does not retransmit. Later datagrams can still arrive; this demo’s application adds no recovery.'];
-    if (event.type === 'retry') return ['A2 is queued for retransmission.', 'The toy timeout expired without recovery. A2r carries the same data as A2 and waits for the shared link like other packets.'];
-    if (packet.owner === 'B') return [label + ' reaches the other receiver.', 'Competing traffic used the shared link but does not belong in application A’s data.'];
-    if (run.settings.transport === 'udp') return [label + ' reaches application A.', 'This datagram is available in arrival order. The application must handle ordering, gaps, or recovery if it needs them.'];
-    if (snapshot.buffered.includes(packet.sequence)) return [label + ' arrived, but must wait.', 'Earlier bytes are missing. TCP can buffer later bytes without exposing them out of order to the application.'];
-    return [label + ' closes the next gap.', 'The next consecutive bytes are available to the application. Any buffered pieces following them can now be released in order.'];
+    if (event.type === 'send') return [label + ' starts transmission.', 'Bits enter the link. Queued packets wait; earlier packets keep travelling.'];
+    if (event.type === 'depart') return [label + ' is now travelling.', 'Its last bit left the router. The link can send the next packet now.'];
+    if (event.type === 'drop') return ['A2’s first attempt is lost.', run.settings.transport === 'tcp' ? 'These bytes never arrive. The toy TCP timeout triggers a retry.' : 'UDP does not retry. Later datagrams can arrive; this app adds no recovery.'];
+    if (event.type === 'retry') return ['A2 is queued for retransmission.', 'The toy timeout expired. A2r repeats A2’s data and waits for the link.'];
+    if (packet.owner === 'B') return [label + ' reaches the other receiver.', 'B shares the link, but belongs to another app.'];
+    if (run.settings.transport === 'udp') return [label + ' reaches application A.', 'Available immediately. The app must handle any gaps, ordering, or recovery.'];
+    if (snapshot.buffered.includes(packet.sequence)) return [label + ' arrived, but must wait.', 'Earlier bytes are missing. TCP buffers this piece until the gap closes.'];
+    return [label + ' closes the next gap.', 'Consecutive bytes, including buffered pieces after this gap, reach the app in order.'];
   }
   function renderRun() {
     const snapshot = run.snapshots[position];
@@ -463,7 +464,7 @@
     $('propagation-value').textContent = current.propagation + ' ms';
     $('capacity').setAttribute('aria-valuetext', current.kbps + ' kilobits per second');
     $('propagation').setAttribute('aria-valuetext', current.propagation + ' milliseconds one-way propagation');
-    $('delay-settings').textContent = current.kbps + ' kbit/s capacity · ' + current.propagation + ' ms one-way propagation. These controls also update the packet experiment.';
+    $('delay-settings').textContent = current.kbps + ' kbit/s capacity · ' + current.propagation + ' ms one-way propagation · also updates the packet lab.';
     for (const [prefix, bytes] of [['small', 240], ['large', 240000]]) {
       const delay = model.idealDelay(bytes, current.kbps, current.propagation);
       $(prefix + '-delay').textContent = format(delay.total) + ' ms';
@@ -502,11 +503,11 @@
         row.append(sequence); order.append(row);
       }
       const waits = final.delivered.map(sequence => ({ sequence, duration: final.deliveryTimes[sequence] - final.arrivalTimes[sequence] })).filter(wait => wait.duration > 0.01);
-      const waiting = outcome('Waiting for earlier bytes after arrival', waits.length ? waits.map(wait => 'A' + wait.sequence + ': ' + format(wait.duration) + ' ms').join(' · ') : 'None. Arriving data was immediately available to the application.');
+      const waiting = outcome('Waiting for earlier bytes after arrival', waits.length ? waits.map(wait => 'A' + wait.sequence + ': ' + format(wait.duration) + ' ms').join(' · ') : 'None. Data was app-ready on arrival.');
       const completion = comparison.complete ? 'All data available by ' + format(comparison.completeAt) + ' ms.' : 'Missing A2. This demo cannot complete the transfer.';
       column.append(heading, stripLabel, strip, order, waiting, outcome('Download: every byte matters', completion + (transport === 'udp' && comparison.complete ? ' Application code must place datagrams in order.' : '')),
         outcome('Chat: the whole message matters', completion + ' A transport result is not a read receipt.'));
-      const media = outcome('Audio burst: ' + comparison.onTime + ' / ' + comparison.count + ' chunks on time', 'Playback needs data available to the application by its deadline—not just received by the transport.');
+      const media = outcome('Audio burst: ' + comparison.onTime + ' / ' + comparison.count + ' chunks on time', 'Must be app-ready by the deadline, not merely received.');
       const slots = document.createElement('div'); slots.className = 'media-slots'; slots.setAttribute('aria-label', 'Chunk playback outcomes');
       comparison.deadlines.forEach((deadline, index) => {
         const delivered = final.deliveryTimes[index + 1];
@@ -534,7 +535,10 @@
     comparisonPreset = event.target.value;
     renderApplications();
   });
-  $('preset').addEventListener('change', event => applyPreset(event.target.value));
+  $('preset').addEventListener('change', event => {
+    if (event.target.value === 'custom') { stop(); $('settings').open = true; }
+    else applyPreset(event.target.value);
+  });
   $('transport').addEventListener('change', () => rebuild());
   ['payload', 'competing', 'loss', 'reorder'].forEach(id => $(id).addEventListener('change', () => rebuild(true)));
   ['capacity', 'propagation'].forEach(id => $(id).addEventListener('input', () => rebuild(true)));
@@ -557,7 +561,7 @@
     $('alternate-route').setAttribute('class', 'edge ' + (failed ? 'chosen' : 'unused'));
     $('failed-link').toggleAttribute('hidden', !failed);
     $('route-label').textContent = failed ? 'Alternate route selected' : 'Primary route selected';
-    $('route-status').textContent = failed ? 'After routes have adapted, new packets use the alternate provider. Earlier losses still need recovery; this is not an instant failover model.' : 'Routers use forwarding information to choose a next hop. This flow follows the primary route.';
+    $('route-status').textContent = failed ? 'Routes have adapted: new packets use the alternate provider. Earlier losses still need recovery.' : 'Forwarding information selects the next hop. This flow uses the primary route.';
   });
   $('double-capacity').addEventListener('click', () => { $('capacity').value = String(Math.min(192, Number($('capacity').value) * 2)); rebuild(true); });
   $('add-distance').addEventListener('click', () => { $('propagation').value = String(Math.min(300, Number($('propagation').value) + 100)); rebuild(true); });
@@ -568,6 +572,7 @@
       applyPreset(preset);
       position = run.snapshots.length - 1;
       renderRun();
+      window.GuideLayout?.show('experiment');
       $('experiment-title').focus({ preventScroll: true });
       $('experiment').scrollIntoView({
         behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
@@ -589,9 +594,9 @@
   }
   let rtFrames = makeStory();
   const descriptions = {
-    poll: 'Polling: ask every five seconds. Server updates wait for the next question—even if they are already ready.',
-    sse: 'SSE: the server pushes updates over an open event stream. Your replies use separate HTTP requests.',
-    ws: 'WebSocket: both sides send messages over one ongoing channel. No new HTTP request is needed for each message.'
+    poll: 'Polling: ask every five seconds. Ready updates wait for the next request.',
+    sse: 'SSE: the server pushes events. Your replies use separate HTTP requests.',
+    ws: 'WebSocket: both sides send on one channel, without per-message HTTP requests.'
   };
   function updateRealtimeControls() {
     const finished = rtPosition === rtFrames.length - 1;
@@ -621,12 +626,12 @@
   function realtimeNarration(state, event) {
     const message = event.message ? '“' + event.message.text + '”' : 'the update';
     const nextPoll = 5 - state.seconds % 5;
-    if (rtPosition === 0) return ['Open the conversation.', rtMode === 'poll' ? 'The first poll finds no updates. The shop will say your order is ready at 1 s, but your browser will not ask again until 5 s.' : 'The channel is open. At 1 s, the shop will send an update without waiting for another question.'];
-    if (event.flow === 'queued') return ['The shop has news. Your browser does not—yet.', message + ' waits at the server. The next poll is in ' + nextPoll + ' s. Switch to SSE or WebSocket now to compare this same moment.'];
-    if (event.flow === 'to-browser') return [rtMode === 'sse' ? 'The server pushes an event.' : 'The server sends on the open channel.', message + ' is now in the browser’s inbox. There is no polling-interval wait; network transit is omitted from this illustration.'];
+    if (rtPosition === 0) return ['Open the conversation.', rtMode === 'poll' ? 'No updates yet. The shop has news at 1 s; your browser asks again at 5 s.' : 'Channel open. At 1 s, the shop sends news without another request.'];
+    if (event.flow === 'queued') return ['News is waiting at the shop.', message + ' waits for the next poll in ' + nextPoll + ' s. Compare this moment with SSE or WebSocket.'];
+    if (event.flow === 'to-browser') return [rtMode === 'sse' ? 'The server pushes an event.' : 'The server sends on the open channel.', message + ' reached your inbox without polling wait. Network transit is omitted.'];
     if (event.flow === 'to-server') return [rtMode === 'ws' ? 'Your reply uses the same channel.' : 'Your reply uses a separate HTTP POST.', 'The browser sends ' + message + ' to the shop.' + (rtMode === 'sse' ? ' The SSE stream still carries only server-to-browser events.' : rtMode === 'poll' ? ' This POST does not fetch the updates waiting for the next poll.' : ' Either side can send WebSocket messages without a new HTTP request.')];
-    if (event.flow === 'roundtrip') return ['The browser asks again. The server can answer.', event.message ? 'The response brings the waiting update(s) into the browser’s inbox. Compare their created and received times below.' : 'No new updates this time. Polling still needed another request.'];
-    return state.pending.length ? ['Still waiting for the next poll.', state.pending.length + ' update(s) are ready at the server. The browser asks again in ' + nextPoll + ' s.'] : ['Ready for another message.', 'The clock advances, but there is no new message or request at this step. ' + (rtPosition === rtFrames.length - 1 ? 'Switch protocols to compare the final result, or replay the story.' : 'Continue to see the next event.')];
+    if (event.flow === 'roundtrip') return ['The browser asks again.', event.message ? 'Waiting updates reach your inbox. Compare creation and receipt times below.' : 'No updates, but polling still uses a request.'];
+    return state.pending.length ? ['Still waiting for the next poll.', state.pending.length + ' update(s) are ready at the server. The browser asks again in ' + nextPoll + ' s.'] : ['Ready for another message.', 'Time passes without messages or requests. ' + (rtPosition === rtFrames.length - 1 ? 'Compare protocols or replay.' : 'Continue to the next event.')];
   }
   function renderRealtime() {
     realtime = model.createRealtime(rtMode);
@@ -696,7 +701,9 @@
   window.addEventListener('pagehide', stopRealtimePlayback);
   applyPreset('clean'); renderApplications(); renderRealtime();
   document.documentElement.classList.add('ready');
+  document.addEventListener('guide:change', () => { stop(); stopRealtimePlayback(); });
 })();
 </script>
+<script src="assets/guide-layout.js"></script>
 </body>
 </html>

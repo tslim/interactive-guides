@@ -122,3 +122,76 @@ code, .mono { font-family: var(--mono); }
   }
   .site-nav { display: none; }
 }
+
+/* Focused, card-based chapters: the AI guide is the visual reference. */
+.concept-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,13rem),1fr)); gap: var(--s-3); margin-block: var(--s-4); }
+.concept-card { min-width: 0; padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+.concept-card > strong, .concept-card > span { display: block; }
+.concept-card > span, .concept-card > p { color: var(--text-dim); margin-top: var(--s-1); }
+.concept-card h3, .concept-card h4 { margin: 0 0 var(--s-1); font-size: 1rem; line-height: 1.4; }
+.guide-dock { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--border); }
+.guide-dock-inner { max-width: 64rem; margin: auto; padding: var(--s-3) var(--s-5) var(--s-2); }
+.guide-dock-heading { display: flex; align-items: baseline; gap: var(--s-3); margin-bottom: var(--s-2); font: var(--t-label)/1.5 var(--mono); color: var(--text-dim); }
+.guide-dock-heading strong { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; }
+.guide-dock-heading span { flex-shrink: 0; }
+.guide-tabs { display: grid; grid-template-columns: repeat(var(--guide-count),minmax(6.3rem,1fr)); gap: var(--s-2); overflow-x: auto; scrollbar-width: thin; padding: 3px 3px var(--s-2); margin: -3px; scroll-padding: 3px; }
+.guide-tab { display: block; min-width: 0; padding: var(--s-2) var(--s-3); border: 1px solid var(--border-bright); border-radius: var(--r-1); text-decoration: none; color: var(--text); background: var(--surface); font: var(--t-small)/1.4 var(--mono); }
+.guide-tab strong { display: block; font-weight: 400; }
+.guide-tab small { display: block; margin-top: var(--s-1); color: var(--text-dim); font: var(--t-label)/1.4 var(--body); }
+.guide-tab[aria-selected="true"] { border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
+.guide-tab:hover { border-color: var(--accent); }
+.guide-enhanced main { max-width: 64rem; margin: auto !important; padding: var(--s-5) var(--s-5) var(--s-6); }
+.guide-enhanced main h1 { font-size: clamp(1.875rem,3.7vw,2.75rem); margin-block: var(--s-2) var(--s-3); max-width: none; }
+.guide-enhanced main > header:not(.guide-panel) { margin-bottom: var(--s-5); }
+.guide-enhanced main > header .lead { font-size: 1.1rem; max-width: 65ch; }
+.guide-enhanced .section-nav, .guide-enhanced > .nav { display: none !important; }
+.guide-enhanced .guide-panel { padding-top: 0 !important; scroll-margin-top: calc(var(--guide-dock-height,8rem) + 1rem); }
+.guide-enhanced main[id], .guide-enhanced .guide-panel [id] { scroll-margin-top: calc(var(--guide-dock-height,8rem) + 1rem); }
+.guide-panel > .eyebrow, .guide-panel > .section-head { padding-top: 0 !important; border-top: 0 !important; }
+.guide-panel > h2, .guide-panel > .section-head h2 { margin-block: var(--s-2) var(--s-3); }
+.guide-panel > p { margin-bottom: var(--s-4); }
+.guide-enhanced .panel, .guide-enhanced .frame { padding: var(--s-4); }
+.guide-enhanced .narration { margin-top: var(--s-4); min-height: 6rem; }
+.guide-enhanced .narration h3 { font-size: 1.1rem; }
+.guide-enhanced .rt-caption { min-height: 6rem; margin-top: var(--s-4); }
+.guide-enhanced .rt-inbox { min-height: 6rem; }
+.guide-enhanced #journey-player { top: var(--guide-dock-height,8rem); }
+.guide-enhanced .note, .guide-enhanced .takeaway, .guide-enhanced figcaption { font-size: var(--t-small); margin-top: var(--s-4); }
+.guide-enhanced .takeaway { font-weight: 500; }
+.guide-pager { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-5); border-top: 1px solid var(--border); padding-top: var(--s-4); }
+.guide-pager span { font: var(--t-small)/1.4 var(--mono); color: var(--text-dim); }
+.guide-enhanced main > footer { margin-top: var(--s-5); padding-top: 0; border-top: 0; }
+.guide-sources { margin-top: var(--s-4); border-top: 1px solid var(--border); padding-top: var(--s-3); font-size: var(--t-small); }
+.guide-sources summary, .model-notes summary { cursor: pointer; color: var(--text-dim); font-size: var(--t-small); }
+.model-notes { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--border); }
+.model-notes p { margin-top: var(--s-2); color: var(--text-dim); font-size: var(--t-small); }
+.choice-field { min-width: 0; display: grid; gap: var(--s-2); }
+.toolbar > .choice-field { flex: 1 1 100%; width: 100%; }
+.guide-enhanced .timing-details .timeline { border-top: 0; margin-top: var(--s-3); }
+.guide-enhanced .simulator, .guide-enhanced .preview { min-height: 19rem; }
+.choice-cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,7.5rem),1fr)); gap: var(--s-2); min-width: 0; width: 100%; flex: 1 1 100%; }
+.choice-cards.is-compact { grid-template-columns: repeat(auto-fit,minmax(min(100%,3rem),1fr)); }
+.choice-card { text-align: left; overflow-wrap: anywhere; min-width: 0; padding: var(--s-2) var(--s-3); }
+.choice-card strong { display: block; font-weight: 400; }
+.choice-card small { display: block; margin-top: var(--s-1); font: var(--t-label)/1.4 var(--body); color: var(--text-dim); }
+.choice-card[aria-checked="true"] { border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
+.choice-card:disabled { opacity: .65; }
+.choice-cards.is-compact .choice-card { text-align: center; padding-inline: var(--s-1); }
+@media (max-width:700px) {
+  .guide-dock-inner { padding-inline: var(--s-4); }
+  .guide-enhanced main { padding: var(--s-4); }
+  .guide-tabs { grid-template-columns: repeat(var(--guide-count),minmax(6.75rem,1fr)); }
+  .guide-tab { padding: var(--s-2); }
+  .guide-tab small { display: none; }
+  .guide-enhanced main > header .lead { font-size: 1rem; }
+  .guide-enhanced .narration { min-height: 0; }
+  .guide-pager button { font-size: var(--t-label); }
+}
+@media print {
+  .guide-dock, .guide-pager, .choice-cards { display: none !important; }
+  select.choice-native[hidden] { display: inline-block !important; }
+  .guide-enhanced .guide-panel[hidden], .guide-enhanced main > header[hidden] { display: block !important; }
+  .guide-enhanced main { margin: 0 !important; padding: 0; }
+  .guide-enhanced .guide-panel { margin-top: 2rem; }
+  .guide-enhanced #journey-player { position: static; }
+}
