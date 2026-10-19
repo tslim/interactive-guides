@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="An interactive introduction to packets, routers, bandwidth, latency, congestion, TCP, UDP, and real-time web messaging.">
+  <title>How data travels across the internet — Interactive Guides</title>
+  <style>
+    html { scroll-behavior: smooth; }
+    main { max-width: 64rem; margin: auto; padding: var(--s-7) var(--s-5) var(--s-8); }
+    h1, h2, h3, p, figure { margin: 0; }
+    h1 { max-width: 19ch; margin: var(--s-3) 0 var(--s-5); }
+    h2 { margin-bottom: var(--s-4); }
+    h3 { font-size: var(--t-lead); margin-bottom: var(--s-3); }
+    p, li { max-width: 72ch; }
+    p + p { margin-top: var(--s-3); }
+    code { font-size: var(--t-small); overflow-wrap: anywhere; }
+    .eyebrow, .label { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+    .lead { font-size: var(--t-lead); max-width: 55ch; color: var(--text-dim); }
+    .muted, figcaption { color: var(--text-dim); }
+    .small, figcaption { font-size: var(--t-small); }
+    .section { padding-top: var(--s-8); scroll-margin-top: var(--s-5); }
+    .section > .eyebrow { border-top: 1px solid var(--border); padding-top: var(--s-5); margin-bottom: var(--s-2); }
+    .section > p { margin-bottom: var(--s-5); }
+    .section-nav { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); margin-top: var(--s-5); font-size: var(--t-small); }
+    .section-nav a { text-decoration: none; }
+    .section-nav a:hover { text-decoration: underline; }
+    .panel { padding: var(--s-5); border: 1px solid var(--border); border-radius: var(--r-2); background: var(--surface); }
+    .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5); }
+    .two > *, .controls > *, .network-lanes > *, .metrics > * { min-width: 0; }
+    figcaption { margin-top: var(--s-3); max-width: 78ch; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+    .toolbar label { min-width: 0; max-width: 100%; }
+    select { max-width: 100%; }
+    .control { display: grid; gap: var(--s-2); font-size: var(--t-small); }
+    .control output { font-family: var(--mono); color: var(--accent); }
+    .control input[type="range"] { width: 100%; min-width: 0; }
+    .checkbox { display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-small); }
+    input[type="checkbox"] { width: 1.2rem; height: 1.2rem; flex-shrink: 0; }
+    .controls { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: var(--s-5); margin-top: var(--s-4); }
+    button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
+    .note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-small); }
+    .takeaway { margin-top: var(--s-5); font-weight: 600; }
+    details { border-top: 1px solid var(--border); padding-top: var(--s-3); margin-top: var(--s-5); }
+    summary { cursor: pointer; font-weight: 600; padding-block: var(--s-2); }
+    details p, details ul { color: var(--text-dim); margin-top: var(--s-3); }
+    .js-only { display: none; }
+    .ready .js-only { display: flex; }
+    .ready .js-grid { display: grid; }
+    .ready details.js-only { display: block; }
+    noscript, #model-error { display: block; border: 1px solid var(--risk); padding: var(--s-4); margin-top: var(--s-5); }
+    .skip-link { position: absolute; left: var(--s-4); top: -5rem; z-index: 10; background: var(--surface); padding: var(--s-3); }
+    .skip-link:focus { top: var(--s-3); }
+    .network-lanes { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: var(--s-4); margin-top: var(--s-5); }
+    .lane { border-top: 2px solid var(--border-bright); padding-top: var(--s-3); }
+    .lane h3 { font-size: var(--t-body); }
+    .lane-note { font: var(--t-label)/1.5 var(--mono); color: var(--text-dim); margin-bottom: var(--s-3); }
+    .packet-tray { display: flex; align-content: flex-start; flex-wrap: wrap; gap: var(--s-2); min-height: 6rem; }
+    .packet { display: inline-grid; place-items: center; min-width: 2.75rem; min-height: 2.5rem; padding: var(--s-1) var(--s-2); border: 2px solid var(--accent); border-radius: var(--r-1); font: var(--t-small)/1.4 var(--mono); color: var(--text); background: var(--bg); }
+    .packet.background { border: 1px dashed var(--border-bright); color: var(--text-dim); }
+    .packet.buffered { border: 2px dashed var(--warn); }
+    .packet.delivered { border: 2px solid var(--ok); }
+    .packet.lost { border: 2px dashed var(--risk); text-decoration: line-through; }
+    .empty { color: var(--text-dim); font-size: var(--t-small); }
+    .transmission { border: 1px solid var(--border-bright); margin-bottom: var(--s-4); padding: var(--s-3); min-height: 5rem; }
+    .transmission strong { display: block; font: var(--t-small)/1.5 var(--mono); margin-top: var(--s-2); }
+    .legend { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-4); font-size: var(--t-small); color: var(--text-dim); }
+    .event-callout { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); min-height: 8rem; }
+    .event-callout h3 { margin: var(--s-2) 0; }
+    .event-callout p { color: var(--text-dim); }
+    .play-controls { margin-top: var(--s-4); }
+    .play-controls output { font: var(--t-small)/1.5 var(--mono); }
+    .metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--s-4); margin-top: var(--s-5); }
+    .metric { border-top: 1px solid var(--border); padding-top: var(--s-3); }
+    .metric strong { display: block; font-size: var(--t-lead); font-variant-numeric: tabular-nums; }
+    .metric span { color: var(--text-dim); font-size: var(--t-small); }
+    .packet-batch { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+    .packet-piece { min-width: 0; font: var(--t-label)/1.5 var(--mono); }
+    .packet-strip { display: flex; height: 2.5rem; border: 1px solid var(--border-bright); margin-bottom: var(--s-2); }
+    .packet-header { background: var(--border-bright); }
+    .packet-payload { flex: 1; background: var(--surface); }
+    .overhead-bar, .delay-bar { display: flex; height: 1.25rem; border: 1px solid var(--border-bright); margin-top: var(--s-4); }
+    .payload-total, .serialize-part { background: var(--accent); }
+    .headers-total, .propagate-part { background: var(--border-bright); }
+    .diagram { width: 100%; height: auto; display: block; margin-top: var(--s-4); }
+    .diagram text { font-family: var(--body); fill: var(--text); font-size: 17px; }
+    .diagram .sub { font-family: var(--mono); font-size: 13px; fill: var(--text-dim); }
+    .diagram rect { fill: var(--surface); stroke: var(--border-bright); stroke-width: 1.5; }
+    .diagram .edge { fill: none; stroke: var(--border-bright); stroke-width: 2; }
+    .diagram .chosen { stroke: var(--accent); stroke-width: 3; }
+    .diagram .failed { stroke: var(--risk); stroke-width: 3; }
+    .diagram .unused { stroke-dasharray: 6 5; }
+    .formula { font: var(--t-small)/1.7 var(--mono); margin-top: var(--s-4); padding: var(--s-3); background: var(--bg); border: 1px solid var(--border); overflow-wrap: anywhere; }
+    .delay-number { font-size: 1.75rem; font-variant-numeric: tabular-nums; }
+    .delay-labels { display: grid; gap: var(--s-2); margin-top: var(--s-3); font-size: var(--t-small); color: var(--text-dim); }
+    .delay-labels strong { color: var(--text); }
+    .delivery-strip { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-block: var(--s-3); }
+    .delivery-order { margin-block: var(--s-4); }
+    .delivery-order p { color: var(--text-dim); font-size: var(--t-small); }
+    .delivery-order code { display: block; color: var(--text); margin-top: var(--s-1); }
+    #comparison-insight { margin-bottom: var(--s-5); }
+    .outcome { padding-block: var(--s-4); border-top: 1px solid var(--border); }
+    .outcome h3 { font-size: var(--t-body); margin-bottom: var(--s-2); }
+    .outcome p { font-size: var(--t-small); color: var(--text-dim); }
+    .comparison-title { margin-bottom: var(--s-4); }
+    .comparison-title span { color: var(--text-dim); font-size: var(--t-small); }
+    .media-slots { display: flex; gap: var(--s-1); margin-top: var(--s-3); }
+    .media-slot { flex: 1; min-width: 0; height: 1.5rem; border: 1px solid var(--ok); background: var(--ok); }
+    .media-slot.missed { background: transparent; border: 2px dashed var(--risk); }
+    .rt-controls { margin-top: var(--s-4); }
+    .rt-timeline { grid-template-columns: repeat(11,minmax(0,1fr)); gap: var(--s-1); margin-top: var(--s-4); }
+    .rt-timeline button { padding-inline: var(--s-1); font-size: var(--t-label); }
+    .rt-timeline button[aria-current="step"] { border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
+    .rt-caption { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); min-height: 10rem; }
+    .rt-caption h3 { margin-top: var(--s-2); }
+    .rt-scene { display: grid; grid-template-columns: minmax(0,1fr) 10rem minmax(0,1fr); gap: var(--s-4); margin-top: var(--s-5); align-items: start; }
+    .rt-scene > * { min-width: 0; }
+    .rt-endpoint { border-top: 2px solid var(--border-bright); padding-top: var(--s-3); }
+    .rt-endpoint.active { border-top-color: var(--accent); }
+    .rt-inbox { list-style: none; padding: 0; margin: var(--s-3) 0; min-height: 10rem; max-height: 16rem; overflow-y: auto; }
+    .rt-inbox li { border: 1px solid var(--border-bright); padding: var(--s-3); border-radius: var(--r-1); background: var(--bg); overflow-wrap: anywhere; }
+    .rt-inbox li + li { margin-top: var(--s-2); }
+    .rt-inbox .empty { border-style: dashed; }
+    .rt-inbox small { display: block; color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-top: var(--s-2); }
+    .rt-channel { padding-top: var(--s-3); text-align: center; }
+    #rt-channel-label { font: var(--t-small)/1.5 var(--mono); color: var(--accent); }
+    .rt-track { position: relative; display: grid; place-items: center; min-height: 4rem; margin-block: var(--s-3); border-block: 1px dashed var(--border-bright); overflow: hidden; --travel-x: 2rem; --travel-y: 0rem; }
+    .rt-track.open { border-block-style: solid; }
+    .rt-token { padding: var(--s-1) var(--s-2); background: var(--surface); border: 2px solid var(--accent); border-radius: var(--r-1); font: var(--t-label)/1.5 var(--mono); animation-duration: 800ms; animation-timing-function: ease-in-out; }
+    .rt-track[data-flow="to-server"] .rt-token { animation-name: to-server; }
+    .rt-track[data-flow="to-browser"] .rt-token { animation-name: to-browser; }
+    .rt-track[data-flow="roundtrip"] .rt-token, .rt-track[data-flow="open"] .rt-token { animation-name: round-trip; }
+    .rt-track[data-flow="queued"] .rt-token { border-style: dashed; border-color: var(--warn); }
+    @keyframes to-server { from { transform: translate(calc(-1 * var(--travel-x)),calc(-1 * var(--travel-y))); } to { transform: translate(var(--travel-x),var(--travel-y)); } }
+    @keyframes to-browser { from { transform: translate(var(--travel-x),var(--travel-y)); } to { transform: translate(calc(-1 * var(--travel-x)),calc(-1 * var(--travel-y))); } }
+    @keyframes round-trip { 0%,100% { transform: translate(calc(-1 * var(--travel-x)),calc(-1 * var(--travel-y))); } 50% { transform: translate(var(--travel-x),var(--travel-y)); } }
+    #rt-flow-label { font-size: var(--t-small); color: var(--text-dim); min-height: 4rem; }
+    .rt-pending { padding: var(--s-3); border: 1px dashed var(--border-bright); min-height: 4rem; font-size: var(--t-small); color: var(--text-dim); overflow-wrap: anywhere; }
+    .rt-pending.waiting { border-color: var(--warn); color: var(--text); }
+    .rt-countdown { margin-top: var(--s-4); font-size: var(--t-small); color: var(--text-dim); }
+    .rt-countdown progress { width: 100%; display: block; height: .75rem; margin-top: var(--s-2); accent-color: var(--accent); }
+    .rt-custom-input { width: 100%; min-width: 0; padding: var(--s-3); color: var(--text); background: var(--bg); border: 1px solid var(--border-bright); border-radius: var(--r-1); }
+    .event-log { padding-left: var(--s-5); font: var(--t-small)/1.6 var(--mono); max-height: 18rem; overflow-y: auto; }
+    .event-log li + li { margin-top: var(--s-2); }
+    .event-log li { overflow-wrap: anywhere; }
+    #rt-description { min-height: 4rem; margin-top: var(--s-4); }
+    #rt-status { color: var(--text-dim); }
+    footer { margin-top: var(--s-8); padding-top: var(--s-5); border-top: 1px solid var(--border); }
+    .sources { padding-left: var(--s-5); }
+    .sources li + li { margin-top: var(--s-2); }
+    @media (max-width: 760px) {
+      main { padding: var(--s-5) var(--s-4) var(--s-7); }
+      .section { padding-top: var(--s-7); }
+      .two { grid-template-columns: minmax(0,1fr); }
+      .controls { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .panel { padding: var(--s-4); }
+      .network-lanes { grid-template-columns: minmax(0,1fr); }
+      .packet-tray { min-height: 3rem; }
+      .event-callout { min-height: 0; }
+      .packet-batch { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .diagram-scroll { overflow-x: auto; }
+      .diagram-scroll .diagram { min-width: 580px; }
+      .rt-scene { grid-template-columns: minmax(0,1fr); }
+      .rt-inbox { min-height: 4rem; }
+      .rt-track { --travel-x: 0rem; --travel-y: 1rem; }
+      .rt-timeline { grid-template-columns: repeat(6,minmax(0,1fr)); }
+      .rt-caption { min-height: 0; }
+      #rt-flow-label { min-height: 0; }
+    }
+    @media (max-width: 420px) {
+      .controls { grid-template-columns: minmax(0,1fr); }
+      .metrics { grid-template-columns: minmax(0,1fr); gap: var(--s-3); }
+      .toolbar > .control, .toolbar > .control select { width: 100%; }
+    }
+    @media print {
+      .section-nav, .js-only, .ready .js-only, .ready details.js-only, .skip-link { display: none; }
+      main { max-width: none; padding: 0; }
+      .section { padding-top: var(--s-6); }
+      .panel, figure { break-inside: avoid; }
+      .diagram-scroll { overflow: visible; }
+      .diagram-scroll .diagram { min-width: 0; }
+    }
+  </style>
+  <link rel="stylesheet" href="assets/shared.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to guide</a>
+<nav class="site-nav" aria-label="Collection"><div class="site-nav-inner"><a class="site-home" href="index.html">← Interactive Guides</a></div></nav>
+<main id="main">
+  <header>
+    <div class="eyebrow">Internet Fundamentals · Interactive Guide</div>
+    <h1>How data travels across the internet</h1>
+    <p class="lead">Your message shares links with other people’s traffic. Small packets take turns; the receiver puts useful data back together.</p>
+    <nav class="section-nav" aria-label="Guide sections"><a href="#experiment">Move the packets</a><a href="#pieces">Smaller pieces</a><a href="#routes">Routes</a><a href="#delay">Speed &amp; waiting</a><a href="#delivery">Loss &amp; ordering</a><a href="#applications">Different needs</a><a href="#realtime">Real-time chat</a></nav>
+    <p class="small muted" style="margin-top:var(--s-4)">A companion to <a href="how-the-web-works.html">What happens when you open a website?</a> That guide follows the browser; this one follows the data.</p>
+    <noscript>The demos need JavaScript. The explanations, diagrams, and sources remain readable without it.</noscript>
+    <p id="model-error" hidden>The simulator could not load. Keep <code>assets/network-model.js</code> alongside this guide’s other assets.</p>
+  </header>
+
+  <section id="experiment" class="section" aria-labelledby="experiment-title">
+    <div class="eyebrow">Try the mechanism</div>
+    <h2 id="experiment-title" tabindex="-1">One shared link. Many small turns.</h2>
+    <p>A packets belong to your 2,400-byte transfer. B packets belong to another sender. Start with a quiet link, then add traffic or lose a packet.</p>
+    <div class="toolbar js-only">
+      <label class="control">Network preset<select id="preset"><option value="clean">Quiet link</option><option value="shared">Shared link</option><option value="distance">Long travel time</option><option value="loss">Lose A2 once</option><option value="reorder">Delay A1</option><option value="busy">Busy link + loss</option><option value="custom">Custom settings</option></select></label>
+      <label class="control">Delivery model<select id="transport"><option value="tcp">TCP-style ordered stream</option><option value="udp">UDP-style datagrams</option></select></label>
+    </div>
+    <details id="settings" class="js-only"><summary>Change packet size and network conditions</summary>
+      <div class="controls">
+        <label class="control">Payload per A packet<select id="payload"><option value="300">300 bytes</option><option value="600" selected>600 bytes</option><option value="1200">1,200 bytes</option></select></label>
+        <div class="control"><label for="capacity">Link capacity</label><output id="capacity-value" for="capacity">96 kbit/s</output><input id="capacity" type="range" min="24" max="192" step="24" value="96"></div>
+        <div class="control"><label for="propagation">One-way travel time</label><output id="propagation-value" for="propagation">60 ms</output><input id="propagation" type="range" min="20" max="300" step="20" value="60"></div>
+        <label class="control">B packets between A packets<select id="competing"><option value="0">None</option><option value="1">One</option><option value="2">Two</option></select></label>
+        <label class="checkbox"><input type="checkbox" id="loss"> Lose A2’s first attempt</label>
+        <label class="checkbox"><input type="checkbox" id="reorder"> Give A1 extra travel delay</label>
+      </div>
+      <p class="small muted">Changing a setting restarts the experiment and updates the packet-size and delay figures. Section 5 has its own scenario controls. Low capacities and a tiny transfer keep the arithmetic visible; these are not typical internet speeds.</p>
+    </details>
+    <figure class="panel" style="margin-top:var(--s-5)">
+      <div class="network-lanes">
+        <div class="lane"><h3>1. Router queue</h3><p class="lane-note">Already arrived from senders A &amp; B</p><div class="packet-tray" id="queue"><span class="packet">A1</span><span class="packet">A2</span><span class="packet">A3</span><span class="packet">A4</span></div></div>
+        <div class="lane"><h3>2. Shared outgoing link</h3><p class="lane-note">Transmit bits → then travel</p><div class="transmission"><span class="label">Putting bits on the link</span><strong id="transmitting">Link idle</strong></div><div class="packet-tray" id="flying"><span class="empty">No packets travelling yet</span></div></div>
+        <div class="lane"><h3>3. Receiver A</h3><p class="lane-note">Waiting for an earlier piece</p><div class="packet-tray" id="buffer"><span class="empty">Nothing buffered</span></div><p class="lane-note">Available to the application</p><div class="packet-tray" id="delivered"><span class="empty">No data delivered yet</span></div></div>
+      </div>
+      <div class="legend"><span>Solid A: your data</span><span>Dashed B: competing traffic</span><span>Dashed A: waiting for earlier bytes</span><span id="lost-state">Lost attempts: none</span></div>
+      <div class="event-callout"><div class="label" id="event-number">Ready · 0 ms</div><h3 id="event-title">Packets wait for their turn.</h3><p id="event-description">A router forwards each packet onto a link. That link can carry other conversations between your packets.</p></div>
+      <div class="toolbar play-controls js-only"><button type="button" id="back" disabled>← Back</button><button type="button" id="next">Next event →</button><button type="button" id="play" aria-pressed="false">Play events</button><button type="button" id="finish">Jump to result</button><button type="button" id="reset">Start over</button></div>
+      <p class="small muted" id="sim-status" role="status" style="margin-top:var(--s-3)">Ready to step through the transfer.</p>
+      <div class="metrics"><div class="metric"><strong id="metric-time">0 ms</strong><span>modeled elapsed time</span></div><div class="metric"><strong id="metric-data">0 / 2,400 B</strong><span>A payload available to the app</span></div><div class="metric"><strong id="metric-flight">0 packets</strong><span>travelling after transmission</span></div></div>
+      <figcaption>Fig. 1 — Serialization uses the link; propagation does not keep it occupied. Later packets can be transmitted while earlier ones are still travelling.</figcaption>
+    </figure>
+    <details><summary>What this model includes—and deliberately leaves out</summary><p>One output queue, one outgoing link, fixed travel time, and a burst already at the router. B packets have the same size as A packets and a predetermined interleaving. Real routers do not promise this scheduling pattern.</p><p>The loss switch drops A2 once in transit. The delay switch adds extra travel time to A1 to demonstrate reordering. Neither is a claim that internet packets normally take random paths.</p><p>The TCP-style model retries A2 after a toy timeout of 1,000 ms from the end of its initial transmission. The retry joins the same queue. Actual TCP uses acknowledgments, adaptive loss detection, flow control, and congestion control; these are not simulated. ACK traffic, connection setup, other hops, and link-layer overhead are omitted.</p><p>Both models use the same illustrative 40-byte header allowance so the comparison isolates delivery behavior. Real TCP and UDP overhead differs. Event playback advances one event per beat, not in real-time proportion to the modeled clock.</p></details>
+  </section>
+
+  <section id="pieces" class="section" aria-labelledby="pieces-title">
+    <div class="eyebrow">1 · A message becomes pieces</div>
+    <h2 id="pieces-title">Smaller pieces can share the link—but need more headers.</h2>
+    <p>A packet carries payload plus information used to deliver it. Splitting a transfer lets packets from different senders take turns instead of reserving the whole path for one message.</p>
+    <figure class="panel">
+      <h3 id="packet-summary">2,400 bytes of content → 4 payload pieces</h3>
+      <div class="packet-batch" id="packet-batch"></div>
+      <div class="overhead-bar" aria-hidden="true"><div class="payload-total" id="payload-total" style="width:93.75%"></div><div class="headers-total" id="headers-total" style="width:6.25%"></div></div>
+      <p class="small" id="overhead-label" style="margin-top:var(--s-3)">Payload: 2,400 B · illustrative headers: 160 B · total: 2,560 B</p>
+      <div class="toolbar js-only" style="margin-top:var(--s-4)"><button type="button" data-size="300">Try 300-byte payloads</button><button type="button" data-size="1200">Try 1,200-byte payloads</button></div>
+      <figcaption>Fig. 2 — The payload stays the same. Smaller pieces mean more header overhead and shorter individual transmission turns.</figcaption>
+    </figure>
+    <details><summary>Is a message the same as a packet?</summary><p>No. An application defines messages. TCP carries a byte stream and divides bytes into segments; IP carries packets; link technologies carry frames. Each layer has its own information and boundaries.</p><p>A TCP write does not necessarily become one segment or one read at the receiver. Applications need their own way to mark message boundaries. UDP preserves datagram boundaries, but a UDP datagram is still carried inside IP.</p><p>The A1/A2 labels in this guide identify successive groups of data, not real TCP message numbers. Packet sizes are also constrained by maximum transmission units (MTUs); arbitrarily large packets are not a free optimization.</p></details>
+  </section>
+
+  <section id="routes" class="section" aria-labelledby="routes-title">
+    <div class="eyebrow">2 · A network of networks</div>
+    <h2 id="routes-title">Routers choose the next hop, not a private wire.</h2>
+    <figure class="panel">
+      <div class="toolbar js-only"><label class="checkbox"><input type="checkbox" id="route-failure"> Primary link unavailable; routes have adapted</label></div>
+      <div class="diagram-scroll" tabindex="0" role="region" aria-label="Routing illustration; scroll horizontally on small screens">
+        <svg class="diagram" viewBox="0 0 800 270" role="img" aria-labelledby="route-svg-title route-svg-description">
+          <title id="route-svg-title">A primary route and an alternate route between networks</title>
+          <desc id="route-svg-description">Your network can reach a destination through two upstream routers, or through an alternate provider after routes adapt.</desc>
+          <path id="primary-route" class="edge chosen" d="M145 137L295 65H505L655 137"/>
+          <path id="alternate-route" class="edge unused" d="M145 137L400 225L655 137"/>
+          <g id="failed-link" hidden><path class="failed" d="M385 50L415 80M415 50L385 80"/><text class="sub" x="400" y="30" text-anchor="middle">link unavailable</text></g>
+          <rect x="15" y="105" width="130" height="65" rx="4"/><text x="80" y="132" text-anchor="middle">Your network</text><text class="sub" x="80" y="153" text-anchor="middle">gateway router</text>
+          <rect x="225" y="40" width="140" height="50" rx="4"/><text x="295" y="70" text-anchor="middle">Upstream A</text>
+          <rect x="435" y="40" width="140" height="50" rx="4"/><text x="505" y="70" text-anchor="middle">Upstream B</text>
+          <rect x="325" y="200" width="150" height="50" rx="4"/><text x="400" y="230" text-anchor="middle">Alternate provider</text>
+          <rect x="655" y="105" width="130" height="65" rx="4"/><text x="720" y="132" text-anchor="middle">Destination</text><text class="sub" x="720" y="153" text-anchor="middle">server network</text>
+          <text class="sub" x="205" y="108" text-anchor="middle">forwards →</text><text class="sub" x="590" y="108" text-anchor="middle">forwards →</text>
+          <text class="sub" x="400" y="150" text-anchor="middle" id="route-label">Primary route selected</text>
+        </svg>
+      </div>
+      <p id="route-status" role="status" class="small muted">Routers use forwarding information to choose a next hop. This flow follows the primary route.</p>
+      <figcaption>Fig. 3 — Packet switching shares links. Routing determines which links a packet uses. These are related, but different, ideas.</figcaption>
+    </figure>
+    <p class="note">The routing picture is separate from the single-link experiment. Real route changes take time and can temporarily lose packets. A flow often keeps a stable path; alternate paths are possible, not mandatory for every packet.</p>
+    <details><summary>How is this different from circuit switching?</summary><p>A circuit-switched system reserves resources along a path for a conversation. Packet switching lets many conversations share link capacity as packets arrive. That flexibility also means waiting and congestion when demand exceeds available capacity.</p><p>The internet is not one central router. Network operators exchange routing information, and routers forward packets using the information available to them. A chosen route need not be the geographically shortest one.</p></details>
+  </section>
+
+  <section id="delay" class="section" aria-labelledby="delay-title">
+    <div class="eyebrow">3 · Bandwidth, latency &amp; congestion</div>
+    <h2 id="delay-title">More capacity does not make the signal travel faster.</h2>
+    <p><strong>Capacity</strong> is how many bits a link can transmit per second. <strong>Propagation delay</strong> is how long a signal takes to travel. <strong>Queueing delay</strong> is waiting for an occupied link.</p>
+    <figure class="panel">
+      <div class="toolbar js-only"><button type="button" id="double-capacity">Double link capacity</button><button type="button" id="add-distance">Add 100 ms travel time</button><button type="button" id="reset-network">Reset network</button></div>
+      <p class="small muted" id="delay-settings" style="margin-top:var(--s-4)">96 kbit/s capacity · 60 ms one-way propagation</p>
+      <div class="two" style="margin-top:var(--s-5)">
+        <div><h3>A tiny reply · 240 B</h3><strong class="delay-number" id="small-delay">80 ms</strong><div class="delay-bar" aria-hidden="true"><div class="serialize-part" id="small-serialize" style="width:25%"></div><div class="propagate-part" id="small-propagate" style="width:75%"></div></div><div class="delay-labels" id="small-breakdown">20 ms serialization + 60 ms propagation</div></div>
+        <div><h3>A small file · 240,000 B</h3><strong class="delay-number" id="large-delay">20,060 ms</strong><div class="delay-bar" aria-hidden="true"><div class="serialize-part" id="large-serialize" style="width:99.7%"></div><div class="propagate-part" id="large-propagate" style="width:.3%"></div></div><div class="delay-labels" id="large-breakdown">20,000 ms serialization + 60 ms propagation</div></div>
+      </div>
+      <div class="formula">ideal one-hop transfer time = (bytes × 8 ÷ link bits/second) + one-way propagation</div>
+      <figcaption>Fig. 4 — Each bar shows the split within its own total, not a shared time scale: accent = serialization, gray = propagation. This estimate omits headers, queueing, setup, and other hops.</figcaption>
+    </figure>
+    <p class="takeaway">A faster download and a more responsive conversation are not the same thing.</p>
+    <details><summary>What changes when the network is busy?</summary><p>Packets wait behind other packets at an outgoing link. More waiting increases latency without changing the link’s propagation time. If a finite buffer fills, packets can be dropped. Your application’s throughput can be below the link’s capacity.</p><p>Try “Shared link” or “Busy link + loss” above. Competing packets extend the queue; the explicit loss switch is a separate controlled failure, not a simulated buffer-overflow algorithm.</p><p>Latency is a broad term. Round-trip time (RTT) includes the trip out and back, plus other delays. The travel-time slider here describes only one-way propagation on the modeled link.</p></details>
+  </section>
+
+  <section id="delivery" class="section" aria-labelledby="delivery-title">
+    <div class="eyebrow">4 · Loss &amp; ordering</div>
+    <h2 id="delivery-title">Arrival order is not always delivery order.</h2>
+    <div class="two">
+      <div class="panel"><h3>TCP: an ordered byte stream</h3><p>The receiver can buffer later bytes while an earlier gap remains. The sender detects loss and retransmits. The application receives bytes in order.</p><p class="small muted">The cost can be waiting: later data in that stream cannot skip missing earlier bytes. Persistent failures can still terminate the connection.</p></div>
+      <div class="panel"><h3>UDP: individual datagrams</h3><p>UDP itself does not recover missing datagrams or order them. The application receives what arrives and decides what to do next.</p><p class="small muted">That does not force applications to ignore losses. They can add sequence information, recovery, congestion control, and other behavior.</p></div>
+    </div>
+    <div class="toolbar js-only" style="margin-top:var(--s-5)"><button type="button" id="try-loss">Try loss + TCP</button><button type="button" id="try-udp">Same loss + UDP</button><button type="button" id="try-reorder">Try out-of-order TCP</button><a href="#experiment">Inspect the packet journey ↑</a></div>
+    <p class="note">These buttons select the scenario and take you to its completed result in the experiment above. Use Back or Start over to inspect intermediate states.</p>
+    <details><summary>What about QUIC and HTTP/3?</summary><p>QUIC runs over UDP but adds secure connections, loss recovery, congestion control, and reliable ordered streams. “Uses UDP” does not mean “the application accepts unreliable delivery.”</p><p>Ordering is per QUIC stream. Missing data on one stream need not block delivery on another, although the streams still share network resources. HTTP/3 uses QUIC; it does not eliminate latency or congestion.</p></details>
+    <details><summary>Does a TCP acknowledgment mean a message was read?</summary><p>No. Transport acknowledgment means the receiving transport has acknowledged bytes. It does not prove the application processed them, saved a file, or showed a chat message to a person. Applications need their own receipts for those meanings.</p></details>
+  </section>
+
+  <section id="applications" class="section" aria-labelledby="applications-title">
+    <div class="eyebrow">5 · Different applications, different priorities</div>
+    <h2 id="applications-title">A complete file. A complete message. Audio before its deadline.</h2>
+    <p>Choose a scenario here to compare both delivery models on the same network. This comparison is independent of the packet experiment above. Try losing A2 to see completeness and timeliness pull in different directions.</p>
+    <figure class="panel">
+      <div class="toolbar js-only" style="margin-bottom:var(--s-4)">
+        <label class="control">Comparison scenario<select id="comparison-preset"><option value="clean">Quiet link</option><option value="shared">Shared link</option><option value="distance">Long travel time</option><option value="loss">Lose A2 once</option><option value="reorder">Delay A1</option><option value="busy">Busy link + loss</option></select></label>
+      </div>
+      <p id="comparison-settings" class="small muted" style="margin-bottom:var(--s-5)">600-byte payloads · 96 kbit/s capacity · 60 ms one-way travel time</p>
+      <p id="comparison-insight" class="small" hidden>Delaying A1 changes the journey, not necessarily the final score. A2 and A3 arrive first: TCP holds them until A1 arrives; UDP exposes them immediately. Here, A1 catches up before the last piece arrives, and all chunks still meet their playback deadlines. Completion times and audio scores therefore match the quiet link.</p>
+      <div class="two" id="application-comparison"><div><h3>TCP-style stream</h3><p>Recovers the modeled lost piece, but later bytes wait behind it.</p></div><div><h3>UDP-style datagrams</h3><p>Later pieces can reach the application without waiting for recovery.</p></div></div>
+      <figcaption>Fig. 5 — The bare UDP comparison adds no recovery. Real applications can add it. Neither transport is universally better.</figcaption>
+    </figure>
+    <p class="note">The media example treats this tiny burst as numbered audio chunks already available to send. Chunk 1 is due at 300 ms, then one every 150 ms. Solid slots were available to the application by their deadlines; dashed slots were missing or became available too late. These invented deadlines illustrate playout, not a complete live-call model.</p>
+    <details><summary>Why not just use UDP for every live application?</summary><p>A real media application still needs to handle variable delay, loss, network congestion, and security. Jitter buffers delay playback slightly to absorb timing variation. Missing audio may be concealed, recovered, or skipped depending on the deadline.</p><p>A download normally needs every byte. A chat application usually needs complete messages, prompt delivery, and application-level receipts. A live call also cares whether data arrives while it is still useful. Protocol choice depends on all of these needs.</p></details>
+  </section>
+
+  <section id="realtime" class="section" aria-labelledby="realtime-title">
+    <div class="eyebrow">The payoff · Chat without refreshing</div>
+    <h2 id="realtime-title">Who gets to speak next?</h2>
+    <p>Packet switching moves data. Web messaging patterns decide when the application sends it. Compare repeated questions with a channel that stays open.</p>
+    <figure class="panel" id="rt-player">
+      <div class="toolbar js-only" aria-label="Messaging pattern"><button type="button" data-mode="poll" aria-pressed="true">Polling</button><button type="button" data-mode="sse" aria-pressed="false">Server-Sent Events</button><button type="button" data-mode="ws" aria-pressed="false">WebSocket</button></div>
+      <p id="rt-description">Polling: the browser asks for updates every five seconds. An update waits for the next question. Existing HTTP connections can be reused.</p>
+      <p class="small muted">Follow a ten-second order conversation. Switch protocols at any moment to compare the <strong>same story at the same time</strong>.</p>
+      <div class="toolbar rt-controls js-only"><button type="button" id="rt-back" disabled>← Back</button><button type="button" id="rt-tick">Next step →</button><button type="button" id="rt-play" aria-pressed="false">Autoplay</button><button type="button" id="rt-reset">Restart story</button></div>
+      <div class="rt-timeline js-only js-grid" id="rt-timeline" aria-label="Inspect a moment in the story"></div>
+      <div class="rt-caption"><div class="label" id="rt-step-label">Story begins · 0 s</div><h3 id="rt-event-title">Open the conversation.</h3><p id="rt-status" role="status">Press Autoplay or Next step. At 1 s, the shop will say your order is ready. Will your browser receive it yet?</p></div>
+      <div class="rt-scene">
+        <div class="rt-endpoint" id="rt-browser-endpoint"><h3>Your browser</h3><p class="small muted">Updates received from the shop · latest 4</p><ol class="rt-inbox" id="rt-browser-inbox"><li class="empty">No updates received yet.</li></ol><p class="small muted" id="rt-browser">No browser messages sent.</p></div>
+        <div class="rt-channel"><p id="rt-channel-label">Repeated HTTP requests</p><div class="rt-track" id="rt-track" data-flow="idle" aria-hidden="true"><span class="rt-token">HTTP</span></div><p id="rt-flow-label">Browser asks → server answers</p><div class="rt-countdown" id="rt-countdown"><label for="rt-poll-progress" id="rt-poll-label">Next poll in 5 s</label><progress id="rt-poll-progress" max="5" value="0"></progress></div></div>
+        <div class="rt-endpoint" id="rt-server-endpoint"><h3>Shop server</h3><p class="small muted">Messages received from you · latest 4</p><ol class="rt-inbox" id="rt-server-inbox"><li class="empty">No browser messages received yet.</li></ol><p class="rt-pending" id="rt-pending">No updates waiting to be sent.</p><p class="small muted" id="rt-server" style="margin-top:var(--s-2)">No server updates created.</p></div>
+      </div>
+      <div class="metrics"><div class="metric"><strong id="rt-clock">0 s</strong><span>simulated story time</span></div><div class="metric"><strong id="rt-requests">1</strong><span>HTTP requests / opening handshakes</span></div><div class="metric"><strong id="rt-wait">—</strong><span>last delivered update’s application wait</span></div></div>
+      <details class="js-only" id="rt-custom"><summary>Try your own messages</summary><p class="small">Sending a message pauses playback and inserts it at the current moment. Next step continues the story. Restart clears your additions.</p><div class="two" style="margin-top:var(--s-4)"><div class="control"><label for="rt-server-text">Shop’s update</label><input class="rt-custom-input" id="rt-server-text" type="text" maxlength="120" value="Your order is ready."><button type="button" id="rt-update">Send from server</button></div><div class="control"><label for="rt-browser-text">Your message</label><input class="rt-custom-input" id="rt-browser-text" type="text" maxlength="120" value="Please add a receipt."><button type="button" id="rt-send">Send from browser</button></div></div></details>
+      <details><summary>Inspect the protocol log</summary><ol class="event-log" id="rt-log" aria-label="Recent messaging events"><li>GET /updates → no new messages. Next poll at 5 s.</li></ol><p class="small muted">Latest eight events. All earlier events remain part of the simulation.</p></details>
+      <p class="note">Playback advances one story step per beat. Moving tokens show direction, not real transmission speed. Network transit and processing are omitted to isolate application waiting; a displayed 0 s wait does not mean zero network latency. Packet settings above do not change this demo.</p>
+      <figcaption>Fig. 6 — Polling waits for a request; SSE streams server events; WebSocket lets both endpoints send messages on an ongoing channel.</figcaption>
+    </figure>
+    <div class="two" style="margin-top:var(--s-5)">
+      <div><h3>One-way events: SSE</h3><p class="small muted">The browser opens an HTTP event stream. The server sends updates through it. A browser action can use a separate HTTP POST—it need not create a separate physical connection.</p></div>
+      <div><h3>Two-way messages: WebSocket</h3><p class="small muted">After an opening handshake, either endpoint can send framed messages. A WebSocket message is not necessarily one network packet. A secure <code>wss://</code> connection also protects traffic with TLS.</p></div>
+    </div>
+    <p class="takeaway">WebSockets remove the need to keep asking for updates. They do not remove network delay.</p>
+    <details><summary>Does WebSocket bypass TCP’s ordering delays?</summary><p>No. The classic WebSocket protocol runs over TCP. Missing earlier bytes can delay later WebSocket messages on that connection. WebSocket supplies message framing; TCP supplies the ordered byte stream underneath.</p><p>Polling does not necessarily establish a new TCP/TLS connection every time. SSE and WebSocket need connection management and recovery too. Reconnection alone does not guarantee that every missed message is replayed.</p><p>These are common patterns, not a complete catalog. Long polling, where the server holds a request until an update or timeout, is another option.</p></details>
+  </section>
+
+  <footer aria-labelledby="sources-title">
+    <h2 id="sources-title">Keep the layers separate.</h2>
+    <p>Packets share links. Routers choose next hops. Transport protocols shape delivery. Applications decide what data is useful—and when to send more.</p>
+    <h3 style="margin-top:var(--s-5)">Sources &amp; further reading</h3>
+    <ul class="sources">
+      <li><a href="https://gaia.cs.umass.edu/kurose_ross/interactive/end-end-delay.php">Kurose &amp; Ross — Transmission and propagation delay</a></li>
+      <li><a href="https://gaia.cs.umass.edu/kurose_ross/interactive/qdelay.php">Kurose &amp; Ross — Queueing delay</a> (qualitative explanation)</li>
+      <li><a href="https://www.rfc-editor.org/rfc/rfc9293">IETF RFC 9293 — TCP</a></li>
+      <li><a href="https://www.rfc-editor.org/rfc/rfc768">IETF RFC 768 — UDP</a></li>
+      <li><a href="https://www.rfc-editor.org/rfc/rfc9000">IETF RFC 9000 — QUIC</a></li>
+      <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Connection_management_in_HTTP_1.x">MDN — HTTP connection management</a></li>
+      <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events">MDN — Server-Sent Events</a></li>
+      <li><a href="https://www.rfc-editor.org/rfc/rfc6455">IETF RFC 6455 — WebSocket</a></li>
+    </ul>
+    <p class="small muted">AI-generated learning aid. All transfers, messages, routes, and times are simulated locally. The demos do not open sockets or send network traffic. Verify important details against authoritative sources.</p>
+  </footer>
+</main>
+<script src="assets/network-model.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  if (!window.NetworkModel) { $('model-error').hidden = false; return; }
+  const model = window.NetworkModel;
+  const format = number => number.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  const presets = {
+    clean: { payload: 600, kbps: 96, propagation: 60, competing: 0, loss: false, reorder: false },
+    shared: { payload: 600, kbps: 96, propagation: 60, competing: 1, loss: false, reorder: false },
+    distance: { payload: 600, kbps: 96, propagation: 300, competing: 0, loss: false, reorder: false },
+    loss: { payload: 600, kbps: 96, propagation: 60, competing: 0, loss: true, reorder: false },
+    reorder: { payload: 600, kbps: 96, propagation: 60, competing: 0, loss: false, reorder: true },
+    busy: { payload: 600, kbps: 48, propagation: 100, competing: 2, loss: true, reorder: false }
+  };
+  let run, position = 0, timer = null;
+  let comparisonPreset = 'clean';
+  function settings() {
+    return { payload: Number($('payload').value), kbps: Number($('capacity').value), propagation: Number($('propagation').value), competing: Number($('competing').value), loss: $('loss').checked, reorder: $('reorder').checked, transport: $('transport').value };
+  }
+  function stop() {
+    clearInterval(timer); timer = null;
+    $('play').textContent = 'Play events'; $('play').setAttribute('aria-pressed', 'false');
+  }
+  function packetChip(id, extraClass = '') {
+    const span = document.createElement('span');
+    span.className = 'packet ' + (id.startsWith('B') ? 'background ' : '') + extraClass;
+    span.textContent = id; span.title = id.endsWith('r') ? 'Retransmitted A2' : id.startsWith('B') ? 'Other sender’s packet' : 'Your payload piece';
+    return span;
+  }
+  function tray(id, packets, empty, extraClass = '') {
+    const element = $(id); element.replaceChildren();
+    if (packets.length) packets.forEach(packet => element.append(packetChip(packet, extraClass)));
+    else { const span = document.createElement('span'); span.className = 'empty'; span.textContent = empty; element.append(span); }
+  }
+  function eventText(snapshot) {
+    const event = snapshot.event;
+    if (!event) return ['Packets wait for their turn.', 'This burst is already at the router. Start the outgoing link to move one packet at a time.'];
+    const packet = event.packet, label = packet.id;
+    if (event.type === 'send') return [label + ' starts transmission.', 'The router is putting this packet’s bits on the link. Other queued packets wait; already-transmitted packets can keep travelling.'];
+    if (event.type === 'depart') return [label + ' is now travelling.', 'Its last bit has left the router. The link can start another packet without waiting for this one to reach its destination.'];
+    if (event.type === 'drop') return ['A2’s first attempt is lost.', run.settings.transport === 'tcp' ? 'The receiver never gets these bytes. Our TCP-style model will retry after its fixed teaching timeout.' : 'UDP itself does not retransmit. Later datagrams can still arrive; this demo’s application adds no recovery.'];
+    if (event.type === 'retry') return ['A2 is queued for retransmission.', 'The toy timeout expired without recovery. A2r carries the same data as A2 and waits for the shared link like other packets.'];
+    if (packet.owner === 'B') return [label + ' reaches the other receiver.', 'Competing traffic used the shared link but does not belong in application A’s data.'];
+    if (run.settings.transport === 'udp') return [label + ' reaches application A.', 'This datagram is available in arrival order. The application must handle ordering, gaps, or recovery if it needs them.'];
+    if (snapshot.buffered.includes(packet.sequence)) return [label + ' arrived, but must wait.', 'Earlier bytes are missing. TCP can buffer later bytes without exposing them out of order to the application.'];
+    return [label + ' closes the next gap.', 'The next consecutive bytes are available to the application. Any buffered pieces following them can now be released in order.'];
+  }
+  function renderRun() {
+    const snapshot = run.snapshots[position];
+    tray('queue', snapshot.queue, 'Queue empty');
+    tray('flying', snapshot.flying, 'No packets in transit');
+    tray('buffer', snapshot.buffered.map(n => 'A' + n), run.settings.transport === 'udp' ? 'No transport reordering buffer in this model' : 'Nothing buffered', 'buffered');
+    tray('delivered', snapshot.delivered.map(n => 'A' + n), 'No data delivered yet', 'delivered');
+    $('transmitting').textContent = snapshot.transmitting ? snapshot.transmitting + ' · ' + format(run.serialization) + ' ms for all its bits' : 'Link idle';
+    const [title, description] = eventText(snapshot);
+    $('event-number').textContent = 'Event ' + position + ' of ' + (run.snapshots.length - 1) + ' · ' + format(snapshot.time) + ' ms';
+    $('event-title').textContent = title; $('event-description').textContent = description;
+    $('lost-state').textContent = 'Lost attempts: ' + (snapshot.dropped.length ? snapshot.dropped.map(n => 'A' + n).join(', ') + (snapshot.received.includes(2) ? ' · A2 recovered' : ' · A2 not recovered') : 'none');
+    $('metric-time').textContent = format(snapshot.time) + ' ms';
+    $('metric-data').textContent = format(snapshot.delivered.length * run.settings.payload) + ' / 2,400 B';
+    $('metric-flight').textContent = snapshot.flying.length + ' packet' + (snapshot.flying.length === 1 ? '' : 's');
+    $('back').disabled = position === 0;
+    const finished = position === run.snapshots.length - 1;
+    $('next').disabled = finished; $('finish').disabled = finished;
+    $('play').disabled = finished;
+    if (finished) stop();
+    $('sim-status').textContent = 'Event ' + position + '. ' + title + (finished ? (run.complete ? ' Transfer complete in this model.' : ' Transfer ended with missing data; no automatic recovery.') : '');
+  }
+  function renderPackets() {
+    $('packet-summary').textContent = '2,400 bytes of content → ' + run.count + ' payload pieces';
+    $('packet-batch').replaceChildren();
+    for (let sequence = 1; sequence <= run.count; sequence++) {
+      const piece = document.createElement('div'); piece.className = 'packet-piece';
+      const strip = document.createElement('div'); strip.className = 'packet-strip'; strip.setAttribute('aria-hidden', 'true');
+      const header = document.createElement('span'); header.className = 'packet-header'; header.style.width = model.HEADER_BYTES / (model.HEADER_BYTES + run.settings.payload) * 100 + '%';
+      const payload = document.createElement('span'); payload.className = 'packet-payload'; strip.append(header, payload);
+      const label = document.createElement('span'); label.textContent = 'A' + sequence + ': 40 B + ' + format(run.settings.payload) + ' B';
+      piece.append(strip, label); $('packet-batch').append(piece);
+    }
+    $('payload-total').style.width = run.messageBytes / run.originalWireBytes * 100 + '%';
+    $('headers-total').style.width = run.headerBytes / run.originalWireBytes * 100 + '%';
+    $('overhead-label').textContent = 'Payload: 2,400 B · illustrative headers: ' + format(run.headerBytes) + ' B · total: ' + format(run.originalWireBytes) + ' B. Excludes B traffic and retries.';
+    document.querySelectorAll('[data-size]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.size) === run.settings.payload)));
+  }
+  function renderDelays() {
+    const current = run.settings;
+    $('capacity-value').textContent = current.kbps + ' kbit/s';
+    $('propagation-value').textContent = current.propagation + ' ms';
+    $('capacity').setAttribute('aria-valuetext', current.kbps + ' kilobits per second');
+    $('propagation').setAttribute('aria-valuetext', current.propagation + ' milliseconds one-way propagation');
+    $('delay-settings').textContent = current.kbps + ' kbit/s capacity · ' + current.propagation + ' ms one-way propagation. These controls also update the packet experiment.';
+    for (const [prefix, bytes] of [['small', 240], ['large', 240000]]) {
+      const delay = model.idealDelay(bytes, current.kbps, current.propagation);
+      $(prefix + '-delay').textContent = format(delay.total) + ' ms';
+      $(prefix + '-serialize').style.width = delay.serialization / delay.total * 100 + '%';
+      $(prefix + '-propagate').style.width = delay.propagation / delay.total * 100 + '%';
+      $(prefix + '-breakdown').textContent = format(delay.serialization) + ' ms serialization + ' + format(delay.propagation) + ' ms propagation';
+    }
+    $('double-capacity').disabled = current.kbps >= 192;
+    $('double-capacity').textContent = current.kbps > 96 ? 'Set capacity to 192 kbit/s' : 'Double link capacity';
+    $('add-distance').disabled = current.propagation >= 300;
+    $('add-distance').textContent = current.propagation >= 300 ? 'Maximum travel time' : 'Add ' + Math.min(100, 300 - current.propagation) + ' ms travel time';
+  }
+  function outcome(title, description) {
+    const section = document.createElement('div'); section.className = 'outcome';
+    const heading = document.createElement('h3'); heading.textContent = title;
+    const text = document.createElement('p'); text.textContent = description;
+    section.append(heading, text); return section;
+  }
+  function renderApplications() {
+    const scenario = presets[comparisonPreset];
+    $('comparison-settings').textContent = format(scenario.payload) + '-byte payloads · ' + scenario.kbps + ' kbit/s capacity · ' + scenario.propagation + ' ms one-way travel time · ' + scenario.competing + ' B packet(s) between A packets' + (scenario.loss ? ' · A2 lost once' : '') + (scenario.reorder ? ' · A1 delayed' : '');
+    $('comparison-insight').hidden = !scenario.reorder;
+    $('application-comparison').replaceChildren();
+    for (const transport of ['tcp', 'udp']) {
+      const comparison = model.buildRun({ ...scenario, transport });
+      const final = comparison.snapshots[comparison.snapshots.length - 1];
+      const column = document.createElement('div');
+      const heading = document.createElement('h3'); heading.className = 'comparison-title'; heading.textContent = transport === 'tcp' ? 'TCP-style stream' : 'Bare UDP-style datagrams';
+      const stripLabel = document.createElement('p'); stripLabel.className = 'label'; stripLabel.textContent = 'Received pieces · sequence order';
+      const strip = document.createElement('div'); strip.className = 'delivery-strip';
+      for (let i = 1; i <= comparison.count; i++) strip.append(packetChip('A' + i, final.received.includes(i) ? 'delivered' : 'lost'));
+      const order = document.createElement('div'); order.className = 'delivery-order';
+      for (const [label, sequences] of [['Arrival order at receiver', final.received], ['Release order to application', final.delivered]]) {
+        const row = document.createElement('p'); row.append(document.createTextNode(label));
+        const sequence = document.createElement('code'); sequence.textContent = sequences.map(n => 'A' + n).join(' → ') || 'None';
+        row.append(sequence); order.append(row);
+      }
+      const waits = final.delivered.map(sequence => ({ sequence, duration: final.deliveryTimes[sequence] - final.arrivalTimes[sequence] })).filter(wait => wait.duration > 0.01);
+      const waiting = outcome('Waiting for earlier bytes after arrival', waits.length ? waits.map(wait => 'A' + wait.sequence + ': ' + format(wait.duration) + ' ms').join(' · ') : 'None. Arriving data was immediately available to the application.');
+      const completion = comparison.complete ? 'All data available by ' + format(comparison.completeAt) + ' ms.' : 'Missing A2. This demo cannot complete the transfer.';
+      column.append(heading, stripLabel, strip, order, waiting, outcome('Download: every byte matters', completion + (transport === 'udp' && comparison.complete ? ' Application code must place datagrams in order.' : '')),
+        outcome('Chat: the whole message matters', completion + ' A transport result is not a read receipt.'));
+      const media = outcome('Audio burst: ' + comparison.onTime + ' / ' + comparison.count + ' chunks on time', 'Playback needs data available to the application by its deadline—not just received by the transport.');
+      const slots = document.createElement('div'); slots.className = 'media-slots'; slots.setAttribute('aria-label', 'Chunk playback outcomes');
+      comparison.deadlines.forEach((deadline, index) => {
+        const delivered = final.deliveryTimes[index + 1];
+        const onTime = delivered !== undefined && delivered <= deadline;
+        const slot = document.createElement('span'); slot.className = 'media-slot' + (onTime ? '' : ' missed');
+        slot.title = 'A' + (index + 1) + ': ' + (onTime ? 'on time' : delivered === undefined ? 'missing' : 'late') + ', deadline ' + deadline + ' ms';
+        slot.setAttribute('role', 'img'); slot.setAttribute('aria-label', slot.title); slots.append(slot);
+      });
+      media.append(slots); column.append(media); $('application-comparison').append(column);
+    }
+  }
+  function rebuild(custom = false) {
+    stop(); if (custom) $('preset').value = 'custom';
+    run = model.buildRun(settings()); position = 0;
+    renderRun(); renderPackets(); renderDelays();
+  }
+  function applyPreset(name) {
+    const preset = presets[name]; if (!preset) return;
+    $('preset').value = name;
+    $('payload').value = String(preset.payload); $('capacity').value = String(preset.kbps); $('propagation').value = String(preset.propagation); $('competing').value = String(preset.competing);
+    $('loss').checked = preset.loss; $('reorder').checked = preset.reorder;
+    rebuild();
+  }
+  $('comparison-preset').addEventListener('change', event => {
+    comparisonPreset = event.target.value;
+    renderApplications();
+  });
+  $('preset').addEventListener('change', event => applyPreset(event.target.value));
+  $('transport').addEventListener('change', () => rebuild());
+  ['payload', 'competing', 'loss', 'reorder'].forEach(id => $(id).addEventListener('change', () => rebuild(true)));
+  ['capacity', 'propagation'].forEach(id => $(id).addEventListener('input', () => rebuild(true)));
+  $('next').addEventListener('click', () => { stop(); position = Math.min(position + 1, run.snapshots.length - 1); renderRun(); });
+  $('back').addEventListener('click', () => { stop(); position = Math.max(0, position - 1); renderRun(); });
+  $('reset').addEventListener('click', () => { stop(); position = 0; renderRun(); });
+  $('finish').addEventListener('click', () => { stop(); position = run.snapshots.length - 1; renderRun(); });
+  $('play').addEventListener('click', () => {
+    stopRealtimePlayback();
+    if (timer) { stop(); return; }
+    $('play').textContent = 'Pause'; $('play').setAttribute('aria-pressed', 'true');
+    timer = setInterval(() => { position = Math.min(position + 1, run.snapshots.length - 1); renderRun(); }, 800);
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+  window.addEventListener('pagehide', stop);
+  document.querySelectorAll('[data-size]').forEach(button => button.addEventListener('click', () => { $('payload').value = button.dataset.size; rebuild(true); }));
+  $('route-failure').addEventListener('change', event => {
+    const failed = event.target.checked;
+    $('primary-route').setAttribute('class', 'edge ' + (failed ? 'unused' : 'chosen'));
+    $('alternate-route').setAttribute('class', 'edge ' + (failed ? 'chosen' : 'unused'));
+    $('failed-link').toggleAttribute('hidden', !failed);
+    $('route-label').textContent = failed ? 'Alternate route selected' : 'Primary route selected';
+    $('route-status').textContent = failed ? 'After routes have adapted, new packets use the alternate provider. Earlier losses still need recovery; this is not an instant failover model.' : 'Routers use forwarding information to choose a next hop. This flow follows the primary route.';
+  });
+  $('double-capacity').addEventListener('click', () => { $('capacity').value = String(Math.min(192, Number($('capacity').value) * 2)); rebuild(true); });
+  $('add-distance').addEventListener('click', () => { $('propagation').value = String(Math.min(300, Number($('propagation').value) + 100)); rebuild(true); });
+  $('reset-network').addEventListener('click', () => applyPreset('clean'));
+  for (const [id, preset, transport] of [['try-loss', 'loss', 'tcp'], ['try-udp', 'loss', 'udp'], ['try-reorder', 'reorder', 'tcp']]) {
+    $(id).addEventListener('click', () => {
+      $('transport').value = transport;
+      applyPreset(preset);
+      position = run.snapshots.length - 1;
+      renderRun();
+      $('experiment-title').focus({ preventScroll: true });
+      $('experiment').scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start'
+      });
+    });
+  }
+
+  let realtime = model.createRealtime('poll'), rtMode = 'poll', rtPosition = 0, rtTimer = null;
+  function makeStory() {
+    const messages = {
+      1: { action: 'update', text: 'Your order is ready.' },
+      2: { action: 'send', text: 'Please add a receipt.' },
+      6: { action: 'update', text: 'Receipt added.' },
+      7: { action: 'send', text: 'I’ll collect it soon.' }
+    };
+    return Array.from({ length: 11 }, (_, second) => ({ storySecond: second,
+      actions: second === 0 ? [] : [{ action: 'tick' }, ...(messages[second] ? [messages[second]] : [])] }));
+  }
+  let rtFrames = makeStory();
+  const descriptions = {
+    poll: 'Polling: ask every five seconds. Server updates wait for the next question—even if they are already ready.',
+    sse: 'SSE: the server pushes updates over an open event stream. Your replies use separate HTTP requests.',
+    ws: 'WebSocket: both sides send messages over one ongoing channel. No new HTTP request is needed for each message.'
+  };
+  function updateRealtimeControls() {
+    const finished = rtPosition === rtFrames.length - 1;
+    $('rt-back').disabled = rtPosition === 0;
+    $('rt-tick').disabled = finished;
+    $('rt-play').textContent = rtTimer ? 'Pause' : finished ? 'Replay story' : 'Autoplay';
+    $('rt-play').setAttribute('aria-pressed', String(Boolean(rtTimer)));
+  }
+  function stopRealtimePlayback() {
+    clearInterval(rtTimer); rtTimer = null;
+    updateRealtimeControls();
+  }
+  function inbox(id, messages, browserInbox) {
+    const list = $(id); list.replaceChildren();
+    if (!messages.length) {
+      const empty = document.createElement('li'); empty.className = 'empty';
+      empty.textContent = browserInbox ? 'No updates received yet.' : 'No browser messages received yet.';
+      list.append(empty); return;
+    }
+    messages.slice(-4).forEach(message => {
+      const li = document.createElement('li'); li.append(document.createTextNode(message.text));
+      const when = document.createElement('small');
+      when.textContent = browserInbox ? 'Created ' + message.created + ' s · received ' + message.received + ' s' : 'Browser sent at ' + message.created + ' s';
+      li.append(when); list.append(li);
+    });
+  }
+  function realtimeNarration(state, event) {
+    const message = event.message ? '“' + event.message.text + '”' : 'the update';
+    const nextPoll = 5 - state.seconds % 5;
+    if (rtPosition === 0) return ['Open the conversation.', rtMode === 'poll' ? 'The first poll finds no updates. The shop will say your order is ready at 1 s, but your browser will not ask again until 5 s.' : 'The channel is open. At 1 s, the shop will send an update without waiting for another question.'];
+    if (event.flow === 'queued') return ['The shop has news. Your browser does not—yet.', message + ' waits at the server. The next poll is in ' + nextPoll + ' s. Switch to SSE or WebSocket now to compare this same moment.'];
+    if (event.flow === 'to-browser') return [rtMode === 'sse' ? 'The server pushes an event.' : 'The server sends on the open channel.', message + ' is now in the browser’s inbox. There is no polling-interval wait; network transit is omitted from this illustration.'];
+    if (event.flow === 'to-server') return [rtMode === 'ws' ? 'Your reply uses the same channel.' : 'Your reply uses a separate HTTP POST.', 'The browser sends ' + message + ' to the shop.' + (rtMode === 'sse' ? ' The SSE stream still carries only server-to-browser events.' : rtMode === 'poll' ? ' This POST does not fetch the updates waiting for the next poll.' : ' Either side can send WebSocket messages without a new HTTP request.')];
+    if (event.flow === 'roundtrip') return ['The browser asks again. The server can answer.', event.message ? 'The response brings the waiting update(s) into the browser’s inbox. Compare their created and received times below.' : 'No new updates this time. Polling still needed another request.'];
+    return state.pending.length ? ['Still waiting for the next poll.', state.pending.length + ' update(s) are ready at the server. The browser asks again in ' + nextPoll + ' s.'] : ['Ready for another message.', 'The clock advances, but there is no new message or request at this step. ' + (rtPosition === rtFrames.length - 1 ? 'Switch protocols to compare the final result, or replay the story.' : 'Continue to see the next event.')];
+  }
+  function renderRealtime() {
+    realtime = model.createRealtime(rtMode);
+    for (let i = 1; i <= rtPosition; i++) for (const action of rtFrames[i].actions) realtime.dispatch(action.action, action.text);
+    const state = realtime.state;
+    const event = state.events[state.events.length - 1];
+    document.querySelectorAll('[data-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.mode === rtMode)));
+    document.querySelectorAll('[data-rt-time]').forEach(button => {
+      if (Number(button.dataset.rtTime) === state.seconds) button.setAttribute('aria-current', 'step');
+      else button.removeAttribute('aria-current');
+    });
+    $('rt-description').textContent = descriptions[rtMode];
+    $('rt-browser').textContent = state.delivered.length + ' server update(s) received · ' + state.browserMessages + ' browser message(s) sent';
+    $('rt-server').textContent = state.serverUpdates + ' shop update(s) created';
+    inbox('rt-browser-inbox', state.delivered, true); inbox('rt-server-inbox', state.sent, false);
+    $('rt-pending').classList.toggle('waiting', Boolean(state.pending.length));
+    $('rt-pending').textContent = state.pending.length ? state.pending.length + ' update(s) waiting: “' + state.pending[0].text + '”' + (state.pending.length > 1 ? ' and ' + (state.pending.length - 1) + ' more.' : '') : 'No updates waiting to be sent.';
+    $('rt-clock').textContent = state.seconds + ' s';
+    $('rt-requests').textContent = String(state.requests);
+    const delivered = state.delivered[state.delivered.length - 1];
+    $('rt-wait').textContent = delivered ? (delivered.received - delivered.created) + ' s' : '—';
+    $('rt-step-label').textContent = 'Step ' + (rtPosition + 1) + ' of ' + rtFrames.length + ' · ' + state.seconds + ' s';
+    const [title, description] = realtimeNarration(state, event);
+    $('rt-event-title').textContent = title; $('rt-status').textContent = description;
+    $('rt-channel-label').textContent = rtMode === 'poll' ? 'Repeated HTTP requests' : rtMode === 'sse' ? 'Open event stream' : 'Two-way channel';
+    $('rt-track').classList.toggle('open', rtMode !== 'poll');
+    $('rt-track').dataset.flow = event.flow;
+    const token = document.createElement('span'); token.className = 'rt-token';
+    token.textContent = ({ queued: 'waiting', idle: 'ready', open: 'open', roundtrip: 'HTTP' })[event.flow] || (rtMode === 'ws' ? 'message' : event.flow === 'to-server' ? 'POST' : 'event');
+    $('rt-track').replaceChildren(token);
+    $('rt-flow-label').textContent = ({ queued: 'Update stays at the server', idle: 'No message in transit', open: 'Browser opens the channel', roundtrip: 'Browser asks → server answers', 'to-server': rtMode === 'ws' ? 'Message from browser to server' : 'Separate POST from browser to server', 'to-browser': 'Update from server to browser' })[event.flow];
+    $('rt-browser-endpoint').classList.toggle('active', ['to-browser', 'to-server', 'roundtrip', 'open'].includes(event.flow));
+    $('rt-server-endpoint').classList.toggle('active', event.flow !== 'idle');
+    $('rt-countdown').hidden = rtMode !== 'poll';
+    $('rt-poll-label').textContent = 'Next poll in ' + (5 - state.seconds % 5) + ' s';
+    $('rt-poll-progress').value = state.seconds % 5;
+    $('rt-log').replaceChildren();
+    state.events.slice(-8).forEach(item => { const li = document.createElement('li'); li.textContent = item.seconds + ' s · ' + item.text + (item.message ? ' “' + item.message.text + '”' : ''); $('rt-log').append(li); });
+    if (rtPosition === rtFrames.length - 1) stopRealtimePlayback();
+    updateRealtimeControls();
+  }
+  for (let second = 0; second <= 10; second++) {
+    const button = document.createElement('button'); button.type = 'button'; button.dataset.rtTime = String(second); button.textContent = second + ' s';
+    button.setAttribute('aria-label', 'Inspect the story at ' + second + ' seconds');
+    button.addEventListener('click', () => { stopRealtimePlayback(); rtPosition = rtFrames.findIndex(frame => frame.storySecond === second); renderRealtime(); });
+    $('rt-timeline').append(button);
+  }
+  document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => { stopRealtimePlayback(); rtMode = button.dataset.mode; renderRealtime(); }));
+  $('rt-back').addEventListener('click', () => { stopRealtimePlayback(); rtPosition = Math.max(0, rtPosition - 1); renderRealtime(); });
+  $('rt-tick').addEventListener('click', () => { stopRealtimePlayback(); rtPosition = Math.min(rtFrames.length - 1, rtPosition + 1); renderRealtime(); });
+  $('rt-play').addEventListener('click', () => {
+    if (rtTimer) { stopRealtimePlayback(); return; }
+    stop();
+    if (rtPosition === rtFrames.length - 1) { rtPosition = 0; renderRealtime(); }
+    rtTimer = setInterval(() => { rtPosition = Math.min(rtFrames.length - 1, rtPosition + 1); renderRealtime(); }, 1400);
+    updateRealtimeControls();
+  });
+  $('rt-reset').addEventListener('click', () => { stopRealtimePlayback(); rtFrames = makeStory(); rtPosition = 0; renderRealtime(); });
+  for (const [id, action, input] of [['rt-update', 'update', 'rt-server-text'], ['rt-send', 'send', 'rt-browser-text']]) {
+    $(id).addEventListener('click', () => {
+      const text = $(input).value.trim().slice(0, 120); if (!text) return;
+      stopRealtimePlayback(); rtFrames.splice(rtPosition + 1, 0, { actions: [{ action, text }] }); rtPosition++; renderRealtime();
+    });
+    $(input).addEventListener('input', () => { $(id).disabled = !$(input).value.trim(); });
+  }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopRealtimePlayback(); });
+  window.addEventListener('pagehide', stopRealtimePlayback);
+  applyPreset('clean'); renderApplications(); renderRealtime();
+  document.documentElement.classList.add('ready');
+})();
+</script>
+</body>
+</html>
