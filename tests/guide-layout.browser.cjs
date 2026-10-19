@@ -138,6 +138,8 @@ const guides = ['how-the-web-works.html', 'how-data-travels.html', 'how-operatin
     console.log('PASS web visit choices, response linkage, and session state');
 
     await page.goto(base + 'innodb-vs-iceberg.html', { waitUntil: 'networkidle0' });
+    assert.equal(await page.$eval('h1', node => node.textContent), 'Row vs columnar databases');
+    assert((await text('difference')).includes('Iceberg is a table format, not a database engine'));
     await input('columns', 10); await tab('layout'); await page.click('[data-layout-query="lookup"]'); assert((await text('layout-result')).includes('AAPL'));
     await tab('difference'); assert.equal(await text('column-count'), '10');
     await tab('writes');
