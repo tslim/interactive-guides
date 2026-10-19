@@ -152,6 +152,12 @@ const guides = ['how-the-web-works.html', 'how-data-travels.html', 'how-operatin
     // even when the iframe demo replaces its control subtree.
     for (const width of [320, 390, 1280]) {
       await page.setViewport({ width, height: 950 }); await page.goto(base + 'ai.html', { waitUntil: 'networkidle0' });
+      assert.equal(await text('chapter-position'), 'How LLMs work');
+      assert(await page.$eval('#chapter-previous', node => node.disabled));
+      assert.equal(await text('chapter-next'), 'How agents work →');
+      await click('chapter-next'); assert.equal(await text('chapter-position'), 'How agents work');
+      assert.equal(await text('chapter-previous'), '← How LLMs work'); assert(await page.$eval('#chapter-next', node => node.disabled));
+      await click('chapter-previous'); assert.equal(await text('chapter-position'), 'How LLMs work');
       const frame = await (await page.$('#frame-llm')).contentFrame();
       await frame.waitForSelector('[data-choice-for="query"]'); await choice('query', '1', frame);
       assert.equal(await frame.$eval('#query', node => node.value), '1');
