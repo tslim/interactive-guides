@@ -8,7 +8,7 @@ A growing collection of AI-generated interactive guides on various topics.
 - [How an operating system runs your programs](how-operating-systems-work.html) — Explore kernels, processes, virtual memory, RAM pressure, filesystems, drivers, durable saves, and virtual machines, with step-by-step playback and an end-to-end editor journey.
 - [How data travels across the internet](how-data-travels.html) — Explore packets, routing, bandwidth, latency, loss recovery, and real-time messaging with polling, SSE, and WebSockets.
 - [What happens when you open a website?](how-the-web-works.html) — Follow a page load through DNS, TCP, HTTPS, HTTP, and rendering, with hands-on caching, cookies, and sign-in demos.
-- [Row vs columnar databases](innodb-vs-iceberg.html) — Explore storage layouts, query access, and workload trade-offs using InnoDB and Iceberg + Parquet examples.
+- [Row vs columnar databases](row-vs-columnar-databases.html) — Explore storage layouts, query access, and workload trade-offs using InnoDB and Iceberg + Parquet examples.
 
 ## Viewing the guides
 

@@ -7,7 +7,7 @@ const { readFile } = require('node:fs/promises');
 const { resolve, extname } = require('node:path');
 const puppeteer = require(process.env.PUPPETEER_MODULE || 'puppeteer');
 const root = resolve(__dirname, '..');
-const guides = ['how-the-web-works.html', 'how-data-travels.html', 'how-operating-systems-work.html', 'innodb-vs-iceberg.html'];
+const guides = ['how-the-web-works.html', 'how-data-travels.html', 'how-operating-systems-work.html', 'row-vs-columnar-databases.html'];
 (async () => {
   const server = createServer(async (req, res) => {
     try {
@@ -56,7 +56,7 @@ const guides = ['how-the-web-works.html', 'how-data-travels.html', 'how-operatin
         await page.goto((protocol === 'http' ? base : 'file://' + root + '/') + file, { waitUntil: 'networkidle0' });
         assert(await page.$('.guide-enhanced'), file);
         const ids = await page.$$eval('.guide-panel', nodes => nodes.map(node => node.id));
-        assert.equal(ids.length, file.includes('operating') ? 9 : file.includes('innodb') ? 5 : 7);
+        assert.equal(ids.length, file.includes('operating') ? 9 : file.includes('row-vs-columnar') ? 5 : 7);
         for (const id of ids) {
           await tab(id); assert.equal(await active(), id);
           assert.equal(await page.$$eval('.guide-panel:not([hidden])', nodes => nodes.length), 1);
@@ -137,7 +137,7 @@ const guides = ['how-the-web-works.html', 'how-data-travels.html', 'how-operatin
     await tab('address'); await tab('sessions'); await click('expire'); await click('account'); assert((await text('auth-wire')).includes('401'));
     console.log('PASS web visit choices, response linkage, and session state');
 
-    await page.goto(base + 'innodb-vs-iceberg.html', { waitUntil: 'networkidle0' });
+    await page.goto(base + 'row-vs-columnar-databases.html', { waitUntil: 'networkidle0' });
     assert.equal(await page.$eval('h1', node => node.textContent), 'Row vs columnar databases');
     assert((await text('difference')).includes('Iceberg is a table format, not a database engine'));
     await input('columns', 10); await tab('layout'); await page.click('[data-layout-query="lookup"]'); assert((await text('layout-result')).includes('AAPL'));

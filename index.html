@@ -10,21 +10,31 @@
     main { max-width: 64rem; margin: auto; padding: var(--s-8) var(--s-5); }
     h1 { margin: 0; }
     header p { max-width: 55ch; color: var(--text-dim); margin: var(--s-5) 0 var(--s-7); font-size: var(--t-lead); }
-    ul { list-style: none; padding: 0; display: grid; gap: var(--s-4); }
+    ul { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--s-4); }
     .guide {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      min-height: 23rem;
+      height: 100%;
       padding: var(--s-5);
       border: 1px solid var(--border);
       border-radius: var(--r-2);
       background: var(--surface);
       color: inherit;
       text-decoration: none;
+      transition: border-color .16s ease, transform .16s ease, box-shadow .16s ease;
     }
-    .guide:hover { border-color: var(--accent); }
+    .guide:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 10px 28px var(--lift); }
+    .guide:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .guide-icon { display: grid; place-items: center; width: 4rem; height: 4rem; margin-bottom: var(--s-5); border: 1px solid var(--border-bright); border-radius: var(--r-2); color: var(--accent); background: var(--bg); }
+    .guide-icon svg { width: 2.25rem; height: 2.25rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
     .topic { color: var(--text-dim); font: 400 var(--t-label)/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
-    h2 { margin: var(--s-2) 0; }
-    .guide p { margin: 0 0 var(--s-4); color: var(--text-dim); }
-    .open { color: var(--accent); font-weight: 600; }
+    h2 { margin: var(--s-2) 0 var(--s-3); font-size: var(--t-h3); line-height: 1.2; }
+    .guide p { margin: 0 0 var(--s-5); color: var(--text-dim); }
+    .open { color: var(--accent); font-weight: 600; margin-top: auto; }
+    @media (max-width: 900px) { ul { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+    @media (max-width: 520px) { ul { grid-template-columns: 1fr; } .guide { min-height: 19rem; } }
+    @media (prefers-reduced-motion: reduce) { .guide { transition: none; } .guide:hover { transform: none; } }
     footer { margin-top: var(--s-7); border-top: 1px solid var(--border); padding-top: var(--s-5); color: var(--text-dim); font-size: var(--t-small); }
     @media (max-width: 700px) {
       main { padding: var(--s-7) var(--s-4); }
@@ -43,6 +53,7 @@
       <ul>
         <li>
           <a class="guide" href="ai.html">
+            <span class="guide-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 4v4m0 16v4M4 16h4m16 0h4M7.5 7.5l2.8 2.8m11.4 11.4 2.8 2.8m0-17-2.8 2.8m-11.4 11.4-2.8 2.8"/><circle cx="16" cy="16" r="7"/><circle cx="16" cy="16" r="2"/></svg></span>
             <span class="topic">Artificial intelligence</span>
             <h2>From tokens to agents</h2>
             <p>How LLMs and AI agents work: architecture, training, inference, tools, RAG, and context.</p>
@@ -51,6 +62,7 @@
         </li>
         <li>
           <a class="guide" href="how-operating-systems-work.html">
+            <span class="guide-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="5" y="5" width="22" height="22" rx="3"/><path d="M10 11h12M10 16h12M10 21h7M11 2v3m5-3v3m5-3v3M11 27v3m5-3v3m5-3v3M2 11h3m-3 5h3m-3 5h3m22-10h3m-3 5h3m-3 5h3"/></svg></span>
             <span class="topic">Operating system fundamentals</span>
             <h2>How an operating system runs your programs</h2>
             <p>Explore kernels, processes, memory, filesystems, drivers, and virtual machines—then follow an edit from launch to a durable save.</p>
@@ -59,6 +71,7 @@
         </li>
         <li>
           <a class="guide" href="how-data-travels.html">
+            <span class="guide-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><path d="M4 16h24M16 4c3.2 3.2 4.8 7.2 4.8 12S19.2 24.8 16 28m0-24c-3.2 3.2-4.8 7.2-4.8 12s1.6 8.8 4.8 12M7.5 8.5h17m-17 15h17"/></svg></span>
             <span class="topic">Internet fundamentals</span>
             <h2>How data travels across the internet</h2>
             <p>Explore packets, shared links, latency, TCP and UDP, then compare polling, Server-Sent Events, and WebSockets.</p>
@@ -67,6 +80,7 @@
         </li>
         <li>
           <a class="guide" href="how-the-web-works.html">
+            <span class="guide-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="20" rx="3"/><path d="M4 12h24M8 9h.1M11 9h.1m4 7h10m-10 4h7"/></svg></span>
             <span class="topic">Web fundamentals</span>
             <h2>What happens when you open a website?</h2>
             <p>Follow an address to a rendered page: DNS, TCP, HTTPS, requests, resources, cookies, and sign-in.</p>
@@ -74,7 +88,8 @@
           </a>
         </li>
         <li>
-          <a class="guide" href="innodb-vs-iceberg.html">
+          <a class="guide" href="row-vs-columnar-databases.html">
+            <span class="guide-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><ellipse cx="16" cy="7" rx="10" ry="3.5"/><path d="M6 7v18c0 2 4.5 4 10 4s10-2 10-4V7M6 16c0 2 4.5 4 10 4s10-2 10-4"/></svg></span>
             <span class="topic">Databases &amp; storage</span>
             <h2>Row vs columnar databases</h2>
             <p>Explore storage layouts and workload trade-offs, using InnoDB and Iceberg + Parquet as examples.</p>
