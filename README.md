@@ -5,6 +5,7 @@ A growing collection of AI-generated interactive guides on various topics.
 ## Guides
 
 - [From tokens to agents](ai.html) — Explore how LLMs and AI agents work, including architecture, training, inference, tools, RAG, and context.
+- [What happens when you open a website?](how-the-web-works.html) — Follow a page load through DNS, TCP, HTTPS, HTTP, and rendering, with hands-on caching, cookies, and sign-in demos.
 - [InnoDB & Iceberg — Same data, different work](innodb-vs-iceberg.html) — Compare row and column storage, read and write paths, indexing, and workload fit.
 
 ## Viewing the guides
