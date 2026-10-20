@@ -82,6 +82,54 @@ button, select {
 button { cursor: pointer; }
 button:hover, select:hover { border-color: var(--accent); }
 button:disabled { cursor: not-allowed; color: var(--text-dim); border-color: var(--border); }
+button.primary:disabled { color: var(--surface); }
+@media (prefers-color-scheme: dark) {
+  button.primary:disabled { color: var(--bg); }
+}
+#loop .loop-actions button.primary:disabled {
+  color: var(--surface);
+  background: var(--accent);
+  border-color: var(--accent);
+  opacity: 1;
+}
+@media (prefers-color-scheme: dark) {
+  #loop .loop-actions button.primary:disabled { color: var(--bg); }
+}
+#loop .loop-actions button:disabled:not(.primary) {
+  color: var(--text);
+  border-color: var(--border-bright);
+  opacity: 1;
+}
+#loop .scenario {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-2);
+  background: var(--surface);
+}
+#loop .user-message {
+  padding: var(--s-3) var(--s-4);
+  border-left: 3px solid var(--accent);
+  background: var(--bg);
+}
+#loop .user-message .micro { color: var(--accent); }
+#loop .user-message p { margin-top: var(--s-1); }
+#loop .scenario-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-5);
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-1);
+}
+#loop .scenario-controls legend {
+  padding: 0 var(--s-1);
+  font: var(--t-label) var(--mono);
+  color: var(--text-dim);
+}
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
 input { accent-color: var(--accent); }
 code, .mono { font-family: var(--mono); }
