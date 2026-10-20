@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Compare the same AI calculation on CPU and GPU side by side. Follow memory placement, parallel arithmetic, and caller-readable completion through one shared journey.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <title>How CPUs and GPUs work together — Interactive Guides</title>
+  <style>
+    main { max-width: 68rem; margin: auto; padding: var(--s-5); }
+    h1, h2, h3, p { margin: 0; }
+    main h1 { font-size: clamp(1.8rem,4vw,2.6rem); margin-bottom: var(--s-3); }
+    main > header { margin-bottom: var(--s-4); }
+    header > p, .muted { color: var(--text-dim); }
+    .small { font-size: var(--t-small); }
+    .label { font: var(--t-label)/1.5 var(--mono); color: var(--text-dim); }
+    .icon { width: 1.2rem; height: 1.2rem; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .js-only, .js-grid, .print-only { display: none; }
+    .compute-ready .js-only { display: block; }
+    .compute-ready .js-grid { display: grid; }
+    .compute-ready .toolbar.js-only { display: flex; }
+    .compute-ready .stage-article { display: none; }
+    .journey-nav { position: sticky; top: 0; z-index: 20; padding-block: var(--s-2); border-block: 1px solid var(--border); background: var(--bg); }
+    .stage-buttons { display: flex; overflow-x: auto; gap: var(--s-2); padding-bottom: var(--s-1); }
+    .stage-buttons button { flex: 1 0 auto; white-space: nowrap; font-size: var(--t-label); padding-inline: var(--s-2); }
+    .stage-buttons [aria-current="step"] { color: var(--accent); border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
+    .dashboard { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-2); padding: var(--s-2) var(--s-3); background: var(--surface); }
+    .dashboard table { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
+    .dashboard caption { padding-bottom: var(--s-2); text-align: left; font-size: var(--t-label); color: var(--text-dim); }
+    .dashboard th, .dashboard td { text-align: left; padding: var(--s-1) var(--s-2); font-variant-numeric: tabular-nums; }
+    .dashboard thead th { font-size: var(--t-label); color: var(--text-dim); font-weight: 400; }
+    .dashboard tbody tr + tr { border-top: 1px solid var(--border); }
+    .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); }
+    .playback { position: sticky; top: var(--compute-nav-height,6rem); z-index: 15; background: var(--bg); padding-block: var(--s-2); margin-bottom: var(--s-5); }
+    .playback button { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); }
+    .primary { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    @media (prefers-color-scheme: dark) { .primary { color: var(--bg); } }
+    .short-label { display: none; }
+    #compute-event-count { margin-left: auto; }
+    .compute-ready .compute-board { display: grid; grid-template-columns: minmax(15rem,.75fr) minmax(0,1.8fr); gap: var(--s-5); align-items: start; }
+    .compute-board > *, .compute-story { min-width: 0; }
+    [data-compute-stage] { margin-top: var(--s-5); scroll-margin-top: calc(var(--compute-nav-height,6rem) + 1rem); }
+    .compute-ready [data-compute-stage] { margin-top: 0; }
+    .compute-ready [data-compute-stage] h2 { font-size: var(--t-lead); }
+    [data-compute-stage] > p { margin-top: var(--s-2); color: var(--text-dim); }
+    .compute-ready [data-compute-stage] > p { font-size: var(--t-small); }
+    fieldset { min-width: 0; padding: var(--s-2); margin: var(--s-3) 0 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+    legend { padding-inline: var(--s-2); font-size: var(--t-small); font-weight: 600; }
+    .control { display: grid; gap: var(--s-2); font-size: var(--t-small); }
+    .check { display: flex; align-items: flex-start; gap: var(--s-2); font-size: var(--t-small); }
+    .check input { width: 1rem; height: 1rem; flex-shrink: 0; margin-top: .2rem; }
+    fieldset .small { color: var(--text-dim); margin-top: var(--s-2); }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    details { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--border); }
+    summary { cursor: pointer; font-size: var(--t-small); font-weight: 600; }
+    details p, details ul { margin-top: var(--s-3); }
+    .event { margin-top: var(--s-4); padding-left: var(--s-3); border-left: 3px solid var(--accent); }
+    .event h3 { font-size: 1rem; margin-block: var(--s-1) var(--s-2); }
+    .event p { font-size: var(--t-small); color: var(--text-dim); }
+    #compute-workspace { gap: var(--s-3); min-width: 0; align-content: start; }
+    .path-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--s-3); align-items: start; }
+    .path { min-width: 0; border: 1px solid var(--border-bright); border-radius: var(--r-2); background: var(--surface); overflow: hidden; }
+    .path-header { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-3); border-bottom: 1px solid var(--border); }
+    .path-header .icon { color: var(--accent); }
+    .path-header h3 { font-size: 1rem; }
+    .held { margin-left: auto; color: var(--text-dim); font: var(--t-label)/1.4 var(--mono); }
+    .path-step { padding: var(--s-2) var(--s-3); color: var(--text-dim); font-size: var(--t-label); min-height: 3.5rem; }
+    .path-body { padding: 0 var(--s-3) var(--s-3); }
+    .memory { padding: var(--s-2); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--bg); }
+    .memory h4 { margin: 0 0 var(--s-2); font-size: var(--t-label); }
+    .memory-item { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-2); padding-block: var(--s-1); border-top: 1px solid var(--border); font-size: var(--t-label); }
+    .memory-item span { color: var(--text-dim); }
+    .memory-item strong { font-weight: 500; text-align: right; }
+    [data-stage="4"] .memory-item:nth-of-type(-n+2) { display: none; }
+    .path-lanes { margin-bottom: var(--s-3); }
+    .lane-groups { display: grid; grid-template-rows: repeat(2,1fr); gap: var(--s-1); min-height: 5rem; margin-top: var(--s-2); }
+    .lane-group { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: var(--s-1); padding: var(--s-1); border: 1px dashed var(--border-bright); border-radius: var(--r-1); }
+    .lane-group.cpu-lanes { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .lane { display: grid; place-items: center; min-width: 0; padding: var(--s-1); border: 1px solid var(--border); background: var(--bg); color: var(--text-dim); font: var(--t-label)/1.3 var(--mono); border-radius: 2px; }
+    .lane.busy { color: var(--accent); border-color: var(--accent); background: var(--surface); }
+    .output-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s-1); margin-top: var(--s-3); }
+    .output-heading h4 { margin: 0; font-size: var(--t-small); }
+    .badge { padding: var(--s-1) var(--s-2); border: 1px solid var(--border); border-radius: 1rem; color: var(--text-dim); font: var(--t-label)/1.3 var(--mono); }
+    .badge[data-state="readable"] { color: var(--ok); border-color: var(--ok); }
+    .matrix { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: var(--s-1); margin-top: var(--s-2); }
+    .number { display: grid; place-items: center; min-width: 0; min-height: 1.6rem; padding: var(--s-1); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--bg); font: var(--t-small)/1.4 var(--mono); }
+    .matrix button { min-width: 0; min-height: 2rem; padding-inline: var(--s-1); }
+    .matrix [aria-pressed="true"] { box-shadow: inset 0 -2px var(--accent); }
+    .matrix .calculated { border-color: var(--accent); }
+    .matrix .active { background: var(--accent); color: var(--surface); }
+    @media (prefers-color-scheme: dark) { .matrix .active { color: var(--bg); } }
+    :root[data-theme="light"] .matrix .active { color: var(--surface); }
+    :root[data-theme="dark"] .matrix .active { color: var(--bg); }
+    #compute-inputs, #compute-calculation { margin-top: 0; }
+    .matrix-pair { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--s-3); margin-top: var(--s-3); }
+    #compute-equation { font: var(--t-small)/1.7 var(--mono); overflow-wrap: anywhere; margin-top: var(--s-3); }
+    .panel { min-width: 0; padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-2); background: var(--surface); }
+    .panel h3 { font-size: 1rem; }
+    .panel p { margin-top: var(--s-2); }
+    .result-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--s-3); }
+    .cost-row { display: grid; grid-template-columns: 2.5rem minmax(0,1fr) auto; align-items: center; gap: var(--s-2); margin-top: var(--s-3); font-size: var(--t-small); }
+    .cost-track { height: .6rem; border: 1px solid var(--border); border-radius: 1rem; background: var(--bg); overflow: hidden; }
+    .cost-fill { display: block; height: 100%; background: var(--accent); }
+    .cost-row output { font: var(--t-label)/1.4 var(--mono); }
+    .access-path { display: flex; flex-wrap: wrap; gap: var(--s-2); list-style: none; padding: 0; font-size: var(--t-small); }
+    .access-path li { padding: var(--s-2); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+    .scope-note { padding-top: var(--s-3); margin-top: var(--s-4); border-top: 1px solid var(--border); font-size: var(--t-small); color: var(--text-dim); }
+    #compute-error { border: 1px solid var(--risk); padding: var(--s-3); margin-top: var(--s-3); }
+    footer { margin-top: var(--s-4); }
+    .related { display: flex; flex-wrap: wrap; gap: var(--s-3); font-size: var(--t-small); }
+    .skip-link { position: absolute; top: -5rem; left: var(--s-4); z-index: 30; padding: var(--s-3); background: var(--surface); }
+    .skip-link:focus { top: var(--s-3); }
+    @media (max-width: 850px) {
+      .compute-ready .compute-board { grid-template-columns: minmax(0,1fr); gap: var(--s-4); }
+      .compute-story { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--s-3); }
+      .compute-story .event { margin-top: 0; }
+    }
+    @media (max-width: 650px) {
+      main { padding: var(--s-4); }
+      .compute-story { display: block; }
+      .compute-story .event { margin-top: var(--s-3); }
+      .compute-ready .toolbar.playback { display: grid; grid-template-columns: 1fr .8fr 1fr 2.75rem; }
+      .playback button { font-size: var(--t-label); padding-inline: var(--s-1); }
+      .playback .wide-label { display: none; }
+      .playback .short-label { display: inline; }
+      #compute-event-count { grid-column: 1 / -1; margin-left: 0; }
+      .dashboard { padding-inline: var(--s-1); }
+      .dashboard table { font-size: var(--t-label); }
+      .dashboard th, .dashboard td { padding-inline: var(--s-1); }
+      .path-grid { gap: var(--s-2); }
+      .path-header { padding: var(--s-2); gap: var(--s-1); }
+      .path-header h3 { font-size: var(--t-small); }
+      .path-header .icon { width: 1rem; height: 1rem; }
+      .path-step { padding: var(--s-2); min-height: 5rem; }
+      .path-body { padding: 0 var(--s-2) var(--s-2); }
+      .path .matrix { gap: 3px; }
+      .path .matrix button { min-height: 1.6rem; padding: 2px; font-size: .7rem; }
+      .lane-groups { min-height: 3rem; }
+      .lane-group { gap: 2px; padding: 2px; }
+      .lane { padding: 2px; font-size: .65rem; }
+      .memory { padding: var(--s-1); }
+      .memory-item { display: block; }
+      .memory-item strong { display: block; text-align: left; }
+      .output-heading { align-items: flex-start; }
+      .badge { font-size: .65rem; padding: var(--s-1); }
+      .matrix-pair, .result-summary { grid-template-columns: minmax(0,1fr); }
+      .cost-row { grid-template-columns: 2.5rem minmax(0,1fr); }
+      .cost-row output { grid-column: 2; }
+    }
+    @media print {
+      main { max-width: none; padding: 0; }
+      .compute-ready .compute-board, .compute-story { display: block; }
+      .js-only, .compute-ready .js-only, .compute-ready .toolbar.js-only, .compute-ready #compute-workspace, .skip-link { display: none !important; }
+      [data-compute-stage], [data-compute-stage][hidden] { display: block !important; margin-top: var(--s-4); break-inside: avoid; }
+      .compute-ready .stage-article { display: block !important; }
+      .print-only { display: block; margin-top: var(--s-4); }
+      #compute-print-reference { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--t-small); }
+    }
+  </style>
+  <link rel="stylesheet" href="assets/shared.css">
+</head>
+<body>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+  <symbol id="compute-icon-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 3v3 M15 3v3 M9 18v3 M15 18v3 M3 9h3 M3 15h3 M18 9h3 M18 15h3 M10 10h4v4h-4Z"/></symbol>
+  <symbol id="compute-icon-gpu" viewBox="0 0 24 24"><path d="M2 5h19v13H2Z M21 9h2 M5 18v3 M9 18v3 M13 18v3"/><circle cx="12" cy="11.5" r="4"/><path d="m10 9 4 5 M14 9l-4 5 M5 9h1 M5 14h1"/></symbol>
+  <symbol id="compute-icon-restart" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1 7 M4 4v6h6"/></symbol>
+</defs></svg>
+<a class="skip-link" href="#main">Skip to guide</a>
+<nav class="site-nav" aria-label="Collection"><div class="site-nav-inner"><a class="site-home" href="index.html">← Interactive Guides</a></div></nav>
+<main id="main">
+  <header><h1>How CPUs and GPUs work together</h1><p>One AI calculation. Both paths side by side. The same answer.</p><noscript><p class="scope-note">JavaScript is off. The five-stage explanation and model notes remain readable. Keep the assets folder alongside this page to use the simulator.</p></noscript><p id="compute-error" hidden>The simulator could not load. Keep <code>assets/compute-model.js</code> and <code>assets/compute-guide.js</code> alongside this page. The explanation below remains readable.</p></header>
+  <div id="compute-simulator">
+    <nav class="journey-nav js-only" aria-label="Calculation journey"><div class="stage-buttons"><button type="button" data-stage="0" aria-controls="prepare" aria-current="step">1 · Prepare</button><button type="button" data-stage="1" aria-controls="place">2 · Place data</button><button type="button" data-stage="2" aria-controls="submit">3 · Submit</button><button type="button" data-stage="3" aria-controls="compute">4 · Compute</button><button type="button" data-stage="4" aria-controls="finish">5 · Finish &amp; use result</button></div></nav>
+    <div class="dashboard js-only"><table aria-label="CPU and GPU calculation state"><caption>Calculation state · work units are illustrative, not time</caption><thead><tr><th scope="col">Path</th><th scope="col">State</th><th scope="col" aria-label="Output cells calculated">Cells</th><th scope="col" aria-label="Caller can read the output">Readable</th><th scope="col">Units</th></tr></thead><tbody><tr><th scope="row">CPU</th><td id="compute-cpu-queue">Not started</td><td id="compute-cpu-cells">0 / 4</td><td id="compute-cpu-readable">Not yet</td><td id="compute-cpu-units">0</td></tr><tr><th scope="row">GPU</th><td id="compute-gpu-queue">Not started</td><td id="compute-gpu-cells">0 / 4</td><td id="compute-gpu-readable">Not yet</td><td id="compute-gpu-units">0</td></tr></tbody></table></div>
+    <div class="toolbar playback js-only" role="group" aria-label="Shared calculation playback"><button type="button" id="compute-previous" aria-label="Previous event" disabled><span class="wide-label">← Prev event</span><span class="short-label">← Prev</span></button><button type="button" id="compute-play" class="primary" aria-pressed="false">Play</button><button type="button" id="compute-next" aria-label="Next event"><span class="wide-label">Next event →</span><span class="short-label">Next →</span></button><button type="button" id="compute-restart" aria-label="Restart trace" title="Restart trace"><svg class="icon" aria-hidden="true"><use href="#compute-icon-restart"/></svg><span class="wide-label">Restart trace</span></button><output id="compute-event-count" class="label">Prepare · event 1</output></div>
+    <div class="compute-board"><div class="compute-story">
+      <section id="prepare" data-compute-stage="0" aria-labelledby="prepare-title"><h2 id="prepare-title" tabindex="-1">1 · Prepare the work</h2><p class="js-only">The CPU prepares inputs and weights for either path. Choose one shared batch and inspect a multiply-add.</p><p class="stage-article">An AI layer multiplies input values by learned weights. Each output cell adds four products. The CPU runs the application that prepares this work—even when arithmetic runs on a GPU. Both alternative paths use the same inputs and weights and produce the same integer answer.</p><fieldset class="js-only"><legend>Shared batch size</legend><div class="control"><label for="compute-batch" class="visually-hidden">Input rows in this batch</label><select id="compute-batch" data-choice><option value="1">1 row</option><option value="8">8 rows</option></select><p class="small">More rows expose more parallel work.</p></div></fieldset></section>
+      <section id="place" data-compute-stage="1" aria-labelledby="place-title"><h2 id="place-title" tabindex="-1">2 · Make the data accessible</h2><p class="js-only">CPU work uses system memory. This discrete GPU needs inputs and any missing weights in device memory.</p><p class="stage-article">The CPU can use the prepared data in system memory and caches. Our discrete-GPU example has separate device memory: inputs and missing weights must be copied before its calculation runs. Already-resident weights can be reused. Integrated GPUs and coherent or unified memory can change these transfers.</p><fieldset class="js-only"><legend>GPU weight reuse</legend><label class="check"><input type="checkbox" id="compute-resident"><span>Reuse weights already on this GPU</span></label><p class="small">An earlier request left them resident. Only GPU transfer overhead changes, not the answer.</p></fieldset></section>
+      <section id="submit" data-compute-stage="2" aria-labelledby="submit-title"><h2 id="submit-title" tabindex="-1">3 · Submit the calculation</h2><p class="js-only">Start CPU work or submit a GPU command. Neither path has returned a finished result yet.</p><p class="stage-article">The CPU caller starts its work. For GPU execution, CPU code submits a command through a runtime and driver. Returning from submission does not mean the GPU result is ready. The OS manages scheduling and access; arithmetic does not enter the kernel instruction by instruction.</p><details id="compute-access" class="js-only"><summary>OS, containers &amp; VMs: where they fit</summary><ol class="access-path" id="compute-access-path"><li>CPU threads ← OS scheduling</li><li>GPU commands ← runtime + driver</li></ol><p class="small muted">Both examples assume hardware access is configured. An ordinary container shares its hosting kernel and needs permitted device access. A VM has a guest kernel and scheduled vCPUs; GPU work needs an arrangement such as passthrough or a shared vGPU.</p><p class="small muted">This is explanatory only: it never resets or blocks the event sequence. These are access relationships, not a pipeline for every instruction. <a href="how-virtual-machines-work.html">Explore processes, containers &amp; VMs →</a></p></details></section>
+      <section id="compute" data-compute-stage="3" aria-labelledby="compute-title"><h2 id="compute-title" tabindex="-1">4 · Execute in parallel</h2><p class="js-only">CPU cores favor flexible, low-latency work; GPUs favor throughput across many grouped lanes. Compare both buffers as their illustrative waves finish.</p><p class="stage-article">CPUs combine sophisticated cores, vector instructions, and multiple threads. GPUs organize many execution lanes into groups for suitable parallel work. The two CPU and eight GPU lanes shown here are teaching choices, not physical core counts. Lanes cooperate on tiles and instructions; there is not one GPU core per neuron.</p><fieldset class="js-only"><legend>Shared toy conditional</legend><label class="check"><input type="checkbox" id="compute-branching"><span>Nonnegative values +1; negative values −1</span></label><details><summary>About lanes and branching</summary><p class="small">Both paths compute the same changed problem. The illustration charges both GPU paths if a four-lane group splits; CPU vector code can also pay divergence costs. Real compilers may predicate or remove these branches. Lane counts are not hardware specifications.</p></details></fieldset></section>
+      <section id="finish" data-compute-stage="4" aria-labelledby="finish-title"><h2 id="finish-title" tabindex="-1">5 · Finish &amp; use result</h2><p class="js-only">Watch CPU return and GPU synchronization/copy. When both results are caller-readable, reveal the application outcome and work-cost comparison.</p><p class="stage-article">Calculated values are not necessarily ready for the caller. CPU work must return; this discrete-GPU path synchronizes and copies output to system memory. Once both callers can read their equal matrices, the activations can feed the next AI layer. Submission, device completion, and caller-readable output are different milestones. The final cost comparison includes preparation and transfers, not just arithmetic; neither processor is always faster.</p></section>
+      <div class="event js-only"><div id="compute-event-label" class="label">Shared event</div><h3 id="compute-event-title">Prepare both paths.</h3><p id="compute-event-description" role="status"></p></div>
+    </div><div id="compute-workspace" class="js-grid">
+      <div class="path-grid" id="compute-paths" aria-label="CPU and GPU alternative execution paths"></div>
+      <details id="compute-calculation"><summary>Inspect the selected cell’s calculation</summary><div id="compute-equation"></div><p class="small muted" id="compute-output-note"></p></details>
+      <details id="compute-inputs"><summary>Inspect shared inputs &amp; weights</summary><div class="matrix-pair"><div><div id="compute-input-shape" class="label">Input · 1 × 4</div><div id="compute-input-matrix" class="matrix"></div></div><div><div class="label">Weights · 4 × 4</div><div id="compute-weight-matrix" class="matrix"></div></div></div><p class="small muted">Configured-value previews—not proof of preparation or transfer. Each path’s memory cards show its current state.</p></details>
+      <div class="result-summary" id="compute-result-summary" hidden><section class="panel" id="compute-application" aria-labelledby="compute-application-title"><h3 id="compute-application-title">Same answer · next layer ready</h3><p id="compute-application-result" class="small"></p><details><summary>From this layer to a full model</summary><p class="small muted">This is a tiny projection with an optional toy conditional, not a complete language model. Actual floating-point CPU/GPU implementations may differ slightly in rounding; the integer example is exact.</p></details></section><section class="panel" id="compute-comparison" aria-labelledby="compute-comparison-title"><h3 id="compute-comparison-title">Illustrative work costs</h3><div class="cost-row"><strong>CPU</strong><div class="cost-track"><span class="cost-fill" id="compute-cpu-bar"></span></div><output id="compute-cpu-total"></output></div><div class="cost-row"><strong>GPU</strong><div class="cost-track"><span class="cost-fill" id="compute-gpu-bar"></span></div><output id="compute-gpu-total"></output></div><details><summary>Cost breakdown &amp; limits</summary><p class="small muted" id="compute-cost-breakdown"></p><p class="small muted">Chosen units expose setup/transfer overhead and parallel work. They are not cycles, milliseconds, benchmarks, or a CPU/GPU speed ratio.</p></details></section></div>
+    </div></div>
+    <p class="scope-note">Each event advances one unfinished step on each alternative path. A finished step holds while the other path continues. These are narrative checkpoints—not simultaneous hardware time. No real hardware is used.</p>
+    <aside class="print-only"><h3>Reference calculation</h3><p id="compute-print-reference">Both alternative paths compute the same integer matrix. GPU submission, device completion, and caller-readable output are distinct milestones.</p></aside>
+  </div>
+  <details><summary>Model assumptions &amp; what this leaves out</summary><p class="small">This local model uses a 1- or 8-row input with four features and a 4 × 4 weight matrix. The optional conditional adds 1 to nonnegative dot products or subtracts 1 from negative ones. It is not ReLU or an implementation recommendation.</p><p class="small">The comparison aligns narrative steps within each stage, not physical time. Two illustrative CPU output lanes and eight GPU lanes in groups of four process the same work. If one path has fewer steps, its snapshot and charged work stay fixed while the other continues. This does not introduce a real cross-device synchronization barrier or suggest both alternatives are executed together.</p><p class="small">Real CPUs use caches, SIMD, out-of-order execution, and multiple threads. GPUs have compute units, registers, caches, grouped execution, and sometimes specialized matrix hardware. The drawn lanes, wave sizes, and synthetic cost units are not hardware specifications or performance measurements.</p><p class="small">Preparation, transfers, submission, arithmetic, and completion have chosen integer costs. Resident weights describe an earlier request’s state. Hardware access is assumed configured; the OS/container/VM explanation does not gate the main journey.</p><p class="small">This is one discrete-GPU workflow whose caller needs output in system memory. Integrated GPUs, unified memory, direct device consumers, transfer overlap, streams, and coherent architectures can change or avoid these copies and waits. Synchronization is not universally a host copy.</p></details>
+  <footer><div class="related"><a href="from-tokens-to-agents.html">AI models &amp; agents →</a><a href="how-operating-systems-work.html">OS processes &amp; memory →</a><a href="how-virtual-machines-work.html">Containers &amp; VMs →</a></div><details><summary>Sources &amp; scope</summary><ul><li><a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">NVIDIA CUDA C++ Programming Guide</a> — one platform’s execution, memory, and asynchronous work.</li><li><a href="https://docs.kernel.org/gpu/drm-mm.html">Linux DRM memory management</a> — GPU buffer management.</li><li><a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/">NVIDIA Container Toolkit</a> — an example of container GPU access.</li><li><a href="https://docs.kernel.org/driver-api/vfio.html">Linux VFIO</a> — device access and assignment.</li></ul><p class="small muted">AI-generated learning aid. Verify important details against authoritative sources. No GPU, OS process, container, or VM is launched by this page.</p></details></footer>
+</main>
+<script src="assets/compute-model.js"></script>
+<script src="assets/compute-guide.js"></script>
+<script src="assets/guide-layout.js"></script>
+</body>
+</html>

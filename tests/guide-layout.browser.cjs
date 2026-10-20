@@ -7,7 +7,7 @@ const { readFile } = require('node:fs/promises');
 const { resolve, extname } = require('node:path');
 const puppeteer = require(process.env.PUPPETEER_MODULE || 'puppeteer');
 const root = resolve(__dirname, '..');
-const guides = ['how-the-web-works.html', 'how-data-travels.html', 'how-live-messages-work.html', 'how-operating-systems-work.html', 'how-virtual-machines-work.html', 'how-databases-store-and-retrieve-data.html'];
+const guides = ['how-cpus-and-gpus-work.html', 'how-the-web-works.html', 'how-data-travels.html', 'how-live-messages-work.html', 'how-operating-systems-work.html', 'how-virtual-machines-work.html', 'how-databases-store-and-retrieve-data.html'];
 const networkModel = require(resolve(root, 'assets/network-model.js'));
 const osModel = require(resolve(root, 'assets/os-model.js'));
 const osJourneyModel = require(resolve(root, 'assets/os-journey-model.js'));
@@ -120,6 +120,24 @@ const osJourneyModel = require(resolve(root, 'assets/os-journey-model.js'));
             assert.equal(await page.$eval('.copy-board', node => node.hidden), step < 2);
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${file} ${width} step ${step} overflows`);
           }
+        } else if (file === 'how-cpus-and-gpus-work.html') {
+          assert.equal(await page.$('.guide-dock'), null, 'one calculation journey, not a second topic navigator');
+          assert.equal(await page.evaluate(() => window.__guideTimers.size), 0, 'compute playback is user-triggered');
+          assert.equal(await page.$('[data-target]'), null, 'both paths are shown without a target toggle');
+          assert.equal(await page.$$eval('[data-compute-stage]', nodes => nodes.length), 5);
+          for (let stage = 0; stage < 5; stage++) {
+            await frameClick(page, `[data-stage="${stage}"]`);
+            assert.equal(await page.$eval('#compute-simulator', node => Number(node.dataset.stage)), stage);
+            assert.equal(await page.$$eval('[data-compute-stage]:not([hidden])', nodes => nodes.length), 1);
+            assert.equal(await page.$$eval('[data-path]', nodes => nodes.filter(node => node.getBoundingClientRect().width > 0).length), 2);
+            for (const target of ['cpu', 'gpu']) {
+              assert.equal(await page.$eval(`#compute-${target}-lanes`, node => node.hidden), stage !== 3);
+              assert.equal(await page.$eval(`#compute-${target}-memory`, node => node.hidden), ![1, 2, 4].includes(stage));
+            }
+            assert.equal(await page.$eval('#compute-result-summary', node => node.hidden), true, 'outcome waits for completion inside the final stage');
+            assert(await page.$eval(`[data-stage="${stage}"]`, node => { const r = node.getBoundingClientRect(), p = node.parentElement.getBoundingClientRect(); return r.left >= p.left - 2 && r.right <= p.right + 2; }));
+            assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${file} ${width} paired stage ${stage} overflows`);
+          }
         } else if (file === 'how-virtual-machines-work.html') {
           assert.equal(await page.$eval('h1', node => node.textContent), 'How processes, containers, and virtual machines isolate work');
           assert.equal(await page.title(), 'How processes, containers, and virtual machines isolate work — Interactive Guides');
@@ -166,7 +184,7 @@ const osJourneyModel = require(resolve(root, 'assets/os-journey-model.js'));
         const duplicateIDs = await page.$$eval('[id]', nodes => nodes.map(node => node.id).filter((id, i, ids) => ids.indexOf(id) !== i));
         assert.deepEqual(duplicateIDs, []);
         await page.evaluate(() => window.scrollTo({ top: 500, behavior: 'instant' }));
-        const dock = file === 'how-live-messages-work.html' ? '.mode-nav' : file === 'how-virtual-machines-work.html' ? '.environment-dock' : ['how-the-web-works.html', 'how-data-travels.html', 'how-operating-systems-work.html'].includes(file) ? '.journey-nav' : '.guide-dock';
+        const dock = file === 'how-live-messages-work.html' ? '.mode-nav' : file === 'how-virtual-machines-work.html' ? '.environment-dock' : ['how-cpus-and-gpus-work.html', 'how-the-web-works.html', 'how-data-travels.html', 'how-operating-systems-work.html'].includes(file) ? '.journey-nav' : '.guide-dock';
         assert.equal(await page.$eval(dock, node => getComputedStyle(node).position), 'sticky');
         assert(await page.$eval(dock, node => node.getBoundingClientRect().top >= -1));
       }
@@ -664,17 +682,20 @@ const osJourneyModel = require(resolve(root, 'assets/os-journey-model.js'));
     await page.setJavaScriptEnabled(false);
     for (const file of guides) {
       await page.goto(base + file, { waitUntil: 'networkidle0' }); assert.equal(await page.$('.guide-dock'), null);
-      assert(await page.$$eval('main > section, [data-journey-step]', nodes => nodes.every(node => !node.hidden)));
-      if (['how-the-web-works.html', 'how-data-travels.html', 'how-operating-systems-work.html'].includes(file)) {
+      assert(await page.$$eval('main > section, [data-journey-step], [data-compute-stage]', nodes => nodes.every(node => !node.hidden)));
+      if (file === 'how-cpus-and-gpus-work.html') {
+        assert.equal(await page.$$eval('[data-compute-stage]', nodes => nodes.length), 5);
+        assert(await page.$$eval('[data-compute-stage]', nodes => nodes.every(node => node.innerText.length > 100)));
+      } else if (['how-the-web-works.html', 'how-data-travels.html', 'how-operating-systems-work.html'].includes(file)) {
         assert.equal(await page.$$eval('[data-journey-step]', nodes => nodes.length), file === 'how-the-web-works.html' ? 6 : 5);
         assert(await page.$$eval('[data-journey-step]', nodes => nodes.every(node => node.innerText.length > 100)));
       }
     }
     await page.setJavaScriptEnabled(true); await page.setRequestInterception(true);
-    let blockNetworkModel = false, blockOSJourneyModel = false, blockGuideControllers = true;
+    let blockNetworkModel = false, blockOSJourneyModel = false, blockComputeModel = false, blockGuideControllers = true;
     page.on('request', request => {
       const url = request.url();
-      if (url.endsWith('/guide-layout.js') || (blockGuideControllers && /\/(?:web-guide|network-guide|messaging-guide|os-guide|vm-guide)\.js$/.test(url)) || (blockNetworkModel && url.endsWith('/network-model.js')) || (blockOSJourneyModel && url.endsWith('/os-journey-model.js'))) request.abort();
+      if (url.endsWith('/guide-layout.js') || (blockGuideControllers && /\/(?:compute-guide|web-guide|network-guide|messaging-guide|os-guide|vm-guide)\.js$/.test(url)) || (blockNetworkModel && url.endsWith('/network-model.js')) || (blockOSJourneyModel && url.endsWith('/os-journey-model.js')) || (blockComputeModel && url.endsWith('/compute-model.js'))) request.abort();
       else request.continue();
     });
     blockGuideControllers = false;
@@ -683,9 +704,9 @@ const osJourneyModel = require(resolve(root, 'assets/os-journey-model.js'));
     await page.$eval('#cpu-cores', node => { node.value = '2'; node.dispatchEvent(new Event('change')); });
     assert.equal(await page.$$eval('#cpu-lanes > div', nodes => nodes.length), 2, 'missing shared presentation leaves native OS controls functional');
     blockGuideControllers = true;
-    for (const file of ['how-the-web-works.html', 'how-data-travels.html', 'how-live-messages-work.html', 'how-operating-systems-work.html', 'how-virtual-machines-work.html']) {
+    for (const file of ['how-cpus-and-gpus-work.html', 'how-the-web-works.html', 'how-data-travels.html', 'how-live-messages-work.html', 'how-operating-systems-work.html', 'how-virtual-machines-work.html']) {
       await page.goto(base + file, { waitUntil: 'networkidle0' });
-      assert(await page.$$eval('[data-journey-step], main > section', nodes => nodes.every(node => !node.hidden)), 'missing guide script leaves explanations readable');
+      assert(await page.$$eval('[data-journey-step], [data-compute-stage], main > section', nodes => nodes.every(node => !node.hidden)), 'missing guide script leaves explanations readable');
     }
     blockNetworkModel = true; blockGuideControllers = false;
     for (const file of ['how-data-travels.html', 'how-live-messages-work.html']) {
@@ -697,6 +718,10 @@ const osJourneyModel = require(resolve(root, 'assets/os-journey-model.js'));
     await page.goto(base + 'how-operating-systems-work.html', { waitUntil: 'networkidle0' });
     assert.equal(await page.$('.ready'), null); assert(!(await page.$eval('#model-error', node => node.hidden)));
     assert(await page.$$eval('[data-journey-step]', nodes => nodes.every(node => !node.hidden)));
+    blockComputeModel = true;
+    await page.goto(base + 'how-cpus-and-gpus-work.html', { waitUntil: 'networkidle0' });
+    assert.equal(await page.$('.compute-ready'), null); assert(!(await page.$eval('#compute-error', node => node.hidden)));
+    assert(await page.$$eval('[data-compute-stage]', nodes => nodes.every(node => !node.hidden)));
     assert.deepEqual(errors, []);
     console.log('PASS print restoration, no-JS article fallback, missing-model guards, native controls without shared presentation, and zero script errors');
   } finally { if (browser) await browser.close(); server.close(); }

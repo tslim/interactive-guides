@@ -5,6 +5,7 @@ A growing collection of AI-generated interactive guides on various topics.
 ## Guides
 
 - [From tokens to agents](from-tokens-to-agents.html) — Explore how LLMs and AI agents work, including architecture, training, inference, tools, RAG, and context.
+- [How CPUs and GPUs work together](how-cpus-and-gpus-work.html) — Follow one shared AI matrix calculation through preparation, memory placement, submission, parallel work, waiting, and caller-readable output. Compare CPU/GPU paths, weight reuse, batching, grouped lane paths, and OS/container/VM access boundaries.
 - [How an operating system runs your programs](how-operating-systems-work.html) — Follow one editor through Launch → Open → Read → Edit → Save, with permissions, caching, memory pressure, and durability experiments in the relevant stage.
 - [How processes, containers, and virtual machines isolate work](how-virtual-machines-work.html) — Trace a file request through native, container, and VM environments, and compare application versus kernel failure boundaries.
 - [How data travels across the internet](how-data-travels.html) — Follow one transfer through packetization, a shared queue, transmission, TCP/UDP delivery, and application outcomes, with stage-local experiments.
@@ -40,6 +41,8 @@ The internet guide uses one five-stage packet journey, with controls and navigat
 
 The OS guide follows one editor and one file through five stages, with a shared process/read-count/durability dashboard and stage-local playback. Each stage starts at its first event; returning to an explored stage preserves its position. [`assets/os-journey-model.js`](assets/os-journey-model.js) builds independent narrative snapshots and reuses the tested save/crash model; [`assets/os-guide.js`](assets/os-guide.js) controls the scene. Scheduling, address translation, and clean-page reclamation are optional independent close-ups, explicitly not the story’s timing model. VM/container comparison lives in its own guide with [`assets/vm-guide.js`](assets/vm-guide.js). Both pages avoid a second topic navigator and retain no-JS/print explanations; legacy OS links open the matching stage or redirect to the VM guide.
 
+The CPU/GPU guide follows one matrix calculation through five stages using [`assets/compute-model.js`](assets/compute-model.js) and [`assets/compute-guide.js`](assets/compute-guide.js). CPU and GPU paths appear side by side for one shared workload; previous/next events and user-triggered playback advance paired deterministic snapshots. Each event advances one unfinished step on each alternative; a shorter path holds without accumulating work. This aligns narrative checkpoints, not simultaneous hardware time. Stage-local experiments share the same settings and answer. A compact workbench places context beside the live scene on desktop, keeps playback sticky, shows memory/output panels only in relevant stages, and expands full matrices and arithmetic on demand. GPU command submission, device completion, and caller-readable output remain distinct. The final “Finish & use result” stage reveals the application outcome and cost comparison only after both paths are caller-readable. The trace assumes hardware access is already configured; the OS/container/VM connection is a read-only close-up, never a gate on event progression. Lane counts and work units are chosen illustrations, not hardware core counts or benchmarks. Like the other journey guides, it omits `data-guide`, supports local files, and retains a complete no-JS/print article.
+
 ## Simulation tests
 
 The internet and live-messaging guides share [`assets/network-model.js`](assets/network-model.js), unchanged by their presentation split. The OS guide uses [`assets/os-model.js`](assets/os-model.js) for deterministic scheduling, address translation, page replacement, and save/crash models, with browser controls in [`assets/os-guide.js`](assets/os-guide.js). All models state their teaching assumptions rather than claiming to reproduce a particular OS or network stack.
@@ -60,7 +63,7 @@ CHROME_PATH=/absolute/path/to/chrome \
 node tests/guide-layout.browser.cjs
 ```
 
-Omit these variables if `puppeteer` resolves normally and its bundled browser is available. No browser tooling is required by the published pages.
+Omit these variables if `puppeteer` resolves normally and its bundled browser is available. For exhaustive CPU/GPU frame comparisons, uninterrupted progression, and fallbacks, run `tests/compute-guide.browser.cjs` with the same environment variables. No browser tooling is required by the published pages.
 
 ## Note
 
