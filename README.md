@@ -4,11 +4,11 @@ A growing collection of AI-generated interactive guides on various topics.
 
 ## Guides
 
-- [From tokens to agents](ai.html) — Explore how LLMs and AI agents work, including architecture, training, inference, tools, RAG, and context.
+- [From tokens to agents](from-tokens-to-agents.html) — Explore how LLMs and AI agents work, including architecture, training, inference, tools, RAG, and context.
 - [How an operating system runs your programs](how-operating-systems-work.html) — Explore kernels, processes, virtual memory, RAM pressure, filesystems, drivers, durable saves, and virtual machines, with step-by-step playback and an end-to-end editor journey.
 - [How data travels across the internet](how-data-travels.html) — Explore packets, routing, bandwidth, latency, loss recovery, and real-time messaging with polling, SSE, and WebSockets.
 - [What happens when you open a website?](how-the-web-works.html) — Follow one browser visit from URL to pixels, with DNS, HTTPS, HTTP, signed-in requests, and resource-cache experiments along the way.
-- [Row vs columnar databases](row-vs-columnar-databases.html) — Explore storage layouts, query access, and workload trade-offs using InnoDB and Iceberg + Parquet examples.
+- [How databases store and retrieve data](how-databases-store-and-retrieve-data.html) — Explore how row-oriented and columnar storage work, why databases organize data differently, and how those choices affect query performance.
 
 ## Viewing the guides
 

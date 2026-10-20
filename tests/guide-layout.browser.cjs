@@ -7,7 +7,7 @@ const { readFile } = require('node:fs/promises');
 const { resolve, extname } = require('node:path');
 const puppeteer = require(process.env.PUPPETEER_MODULE || 'puppeteer');
 const root = resolve(__dirname, '..');
-const guides = ['how-the-web-works.html', 'how-data-travels.html', 'how-operating-systems-work.html', 'row-vs-columnar-databases.html'];
+const guides = ['how-the-web-works.html', 'how-data-travels.html', 'how-operating-systems-work.html', 'how-databases-store-and-retrieve-data.html'];
 (async () => {
   const server = createServer(async (req, res) => {
     try {
@@ -73,7 +73,7 @@ const guides = ['how-the-web-works.html', 'how-data-travels.html', 'how-operatin
         } else {
           assert(await page.$('.guide-enhanced'), file);
           const ids = await page.$$eval('.guide-panel', nodes => nodes.map(node => node.id));
-          assert.equal(ids.length, file.includes('operating') ? 9 : file.includes('row-vs-columnar') ? 5 : 7);
+          assert.equal(ids.length, file.includes('operating') ? 9 : file.includes('how-databases-store-and-retrieve-data') ? 5 : 7);
           for (const id of ids) {
             await tab(id); assert.equal(await active(), id);
             assert.equal(await page.$$eval('.guide-panel:not([hidden])', nodes => nodes.length), 1);
@@ -218,8 +218,8 @@ const guides = ['how-the-web-works.html', 'how-data-travels.html', 'how-operatin
     await page.setViewport({ width: 1280, height: 950 });
     console.log('PASS web single journey, contextual failures/recovery, same-preview resources, caching, session requests, keyboard/history/deep links, mobile focus, and print');
 
-    await page.goto(base + 'row-vs-columnar-databases.html', { waitUntil: 'networkidle0' });
-    assert.equal(await page.$eval('h1', node => node.textContent), 'Row vs columnar databases');
+    await page.goto(base + 'how-databases-store-and-retrieve-data.html', { waitUntil: 'networkidle0' });
+    assert.equal(await page.$eval('h1', node => node.textContent), 'How databases store and retrieve data');
     assert((await text('difference')).includes('Iceberg is a table format, not a database engine'));
     await input('columns', 10); await tab('layout'); await page.click('[data-layout-query="lookup"]'); assert((await text('layout-result')).includes('AAPL'));
     await tab('difference'); assert.equal(await text('column-count'), '10');
@@ -232,7 +232,7 @@ const guides = ['how-the-web-works.html', 'how-data-travels.html', 'how-operatin
     // The reference guide retains its own chapters; small selects become cards
     // even when the iframe demo replaces its control subtree.
     for (const width of [320, 390, 1280]) {
-      await page.setViewport({ width, height: 950 }); await page.goto(base + 'ai.html', { waitUntil: 'networkidle0' });
+      await page.setViewport({ width, height: 950 }); await page.goto(base + 'from-tokens-to-agents.html', { waitUntil: 'networkidle0' });
       assert.equal(await text('chapter-position'), 'How LLMs work');
       assert(await page.$eval('#chapter-previous', node => node.disabled));
       assert.equal(await text('chapter-next'), 'How agents work →');

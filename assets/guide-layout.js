@@ -134,7 +134,7 @@
     const hero = [...main.children].find(node => node.matches('header') && !panels.includes(node));
     const dock = make('header', undefined, 'guide-dock'), inner = make('div', undefined, 'guide-dock-inner');
     const heading = make('div', undefined, 'guide-dock-heading');
-    const guideName = ({ web: 'How the web works', network: 'How data travels', os: 'How operating systems work', storage: 'Row vs columnar databases' })[document.body.dataset.guide] || document.title;
+    const guideName = ({ web: 'How the web works', network: 'How data travels', os: 'How operating systems work', storage: 'How databases store and retrieve data' })[document.body.dataset.guide] || document.title;
     const count = make('span'), tabs = make('nav', undefined, 'guide-tabs');
     heading.append(make('strong', guideName), count);
     tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', 'Guide topics'); tabs.style.setProperty('--guide-count', panels.length);
