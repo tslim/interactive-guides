@@ -53,6 +53,38 @@
     --lift: rgb(0 0 0 / .45);
   }
 }
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f7f8fb;
+  --surface: #fff;
+  --border: #d5dce7;
+  --border-bright: #7b889e;
+  --text: #182337;
+  --text-dim: #526079;
+  --accent: #284fc7;
+  --ok: #1d7443;
+  --warn: #836000;
+  --risk: #b3301d;
+  --info: #1b6a94;
+  --lift: rgb(18 22 20 / .12);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121722;
+  --surface: #1b2332;
+  --border: #36435a;
+  --border-bright: #788ba8;
+  --text: #edf1f9;
+  --text-dim: #b0bdd1;
+  --accent: #a2bcff;
+  --ok: #6cc492;
+  --warn: #e3b94d;
+  --risk: #f0806b;
+  --info: #6fb8dc;
+  --lift: rgb(0 0 0 / .45);
+}
+:root[data-theme="light"] .primary { color: var(--surface); }
+:root[data-theme="dark"] .primary { color: var(--bg); }
 
 * { box-sizing: border-box; }
 html { font-size: 17px; scrollbar-gutter: stable; }
@@ -144,8 +176,43 @@ code, .mono { font-family: var(--mono); }
 }
 .site-home { font: 600 var(--t-small)/1.5 var(--mono); text-decoration: none; }
 .site-home:hover { text-decoration: underline; }
+.footer-meta {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border);
+}
+.footer-credit { margin: 0; }
+.footer-credit a { margin-right: 0; }
+.footer-meta .theme-toggle {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  min-height: 2.5rem;
+  padding: var(--s-2);
+  border-color: transparent;
+  background: transparent;
+  color: var(--text);
+}
+.footer-meta .theme-toggle:hover { background: var(--surface); }
+.footer-meta .theme-toggle svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 @media (max-width: 700px) {
+  .footer-meta { flex-wrap: wrap; }
+
   .site-nav-inner { padding-inline: var(--s-4); }
 }
 @media (prefers-reduced-motion: reduce) {

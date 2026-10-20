@@ -246,5 +246,51 @@
     if (initial && resolvePanel(initial)) requestAnimationFrame(() => scrollTarget(initial));
   }
   if (document.body.dataset.guide) setupChapters();
+
+  const themeKey = 'interactive-guides-theme';
+  const root = document.documentElement;
+  let savedTheme = null;
+  try { savedTheme = localStorage.getItem(themeKey); } catch {}
+  if (savedTheme === 'light' || savedTheme === 'dark') root.dataset.theme = savedTheme;
+  const themeMedia = matchMedia('(prefers-color-scheme: dark)');
+  const currentThemeIsDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : themeMedia.matches;
+  let themeToggle = null;
+  function updateThemeToggle() {
+    if (!themeToggle) return;
+    const target = currentThemeIsDark() ? 'light' : 'dark';
+    themeToggle.innerHTML = target === 'light'
+      ? '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>'
+      : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/></svg>';
+    themeToggle.setAttribute('aria-label', `Switch to ${target} mode`);
+    themeToggle.title = `Switch to ${target} mode`;
+  }
+  const footer = document.querySelector('footer');
+  if (footer && !document.body.hasAttribute('data-embedded-guide')) {
+    const meta = make('div', undefined, 'footer-meta');
+    const credit = make('span', undefined, 'footer-credit');
+    credit.append(document.createTextNode('Prompted by '));
+    const name = make('a', 'T.S. Lim'); name.href = 'https://www.clipsoflogic.com';
+    credit.append(name);
+    themeToggle = make('button', undefined, 'theme-toggle');
+    themeToggle.type = 'button';
+    themeToggle.addEventListener('click', () => {
+      const next = currentThemeIsDark() ? 'light' : 'dark';
+      root.dataset.theme = next;
+      try { localStorage.setItem(themeKey, next); } catch {}
+      updateThemeToggle();
+    });
+    meta.append(credit, themeToggle);
+    footer.append(meta);
+    updateThemeToggle();
+  }
+  window.addEventListener('storage', event => {
+    if (event.key !== themeKey) return;
+    if (event.newValue === 'light' || event.newValue === 'dark') root.dataset.theme = event.newValue;
+    else delete root.dataset.theme;
+    updateThemeToggle();
+  });
+  themeMedia.addEventListener?.('change', () => {
+    if (!root.dataset.theme) updateThemeToggle();
+  });
   refreshChoices();
 })();
