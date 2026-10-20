@@ -7,7 +7,7 @@ A growing collection of AI-generated interactive guides on various topics.
 - [From tokens to agents](ai.html) — Explore how LLMs and AI agents work, including architecture, training, inference, tools, RAG, and context.
 - [How an operating system runs your programs](how-operating-systems-work.html) — Explore kernels, processes, virtual memory, RAM pressure, filesystems, drivers, durable saves, and virtual machines, with step-by-step playback and an end-to-end editor journey.
 - [How data travels across the internet](how-data-travels.html) — Explore packets, routing, bandwidth, latency, loss recovery, and real-time messaging with polling, SSE, and WebSockets.
-- [What happens when you open a website?](how-the-web-works.html) — Follow a page load through DNS, TCP, HTTPS, HTTP, and rendering, with hands-on caching, cookies, and sign-in demos.
+- [What happens when you open a website?](how-the-web-works.html) — Follow one browser visit from URL to pixels, with DNS, HTTPS, HTTP, signed-in requests, and resource-cache experiments along the way.
 - [Row vs columnar databases](row-vs-columnar-databases.html) — Explore storage layouts, query access, and workload trade-offs using InnoDB and Iceberg + Parquet examples.
 
 ## Viewing the guides
@@ -32,7 +32,7 @@ Guides follow the AI guide’s focused, card-based presentation: sticky topic na
 - Mark short, finite selects with `data-choice`. The native control and its handlers remain the source of truth; the shared layer supplies keyboard-accessible cards.
 - Use shared CSS variables and `.concept-grid` / `.concept-card` for compact explanations. Put longer caveats in expandable notes, not another long paragraph.
 
-The AI guide retains its two-chapter layout; its embedded chapters also use the shared choice-card enhancement.
+The AI guide retains its two-chapter layout; its embedded chapters also use the shared choice-card enhancement. The web guide uses one six-step browser journey instead of topic tabs, with state and navigation in [`assets/web-guide.js`](assets/web-guide.js). Step 4 compares guest and signed-in requests in the same page; step 5 switches public assets between network requests and fresh cache hits. It loads the shared choice-card enhancement without `data-guide`, so it does not add a second navigator. All step explanations remain readable without JavaScript and in print.
 
 ## Simulation tests
 

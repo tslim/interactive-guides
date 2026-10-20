@@ -4,577 +4,260 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="Follow a website from URL to pixels. An interactive beginner's guide to DNS, TCP, HTTPS, HTTP, rendering, cookies, and authentication.">
+  <meta name="description" content="Follow one browser visit from URL to pixels, with DNS, HTTPS, HTTP, caching, and sign-in explained along the way.">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <title>What happens when you open a website? — Interactive Guides</title>
   <style>
-    html { scroll-behavior: smooth; }
-    main { max-width: 64rem; margin: auto; padding: var(--s-7) var(--s-5) var(--s-8); }
+    * { min-width: 0; }
+    main { max-width: 64rem; margin: auto; padding: var(--s-5) var(--s-5) var(--s-6); }
     h1, h2, h3, p, figure { margin: 0; }
-    h1 { margin: var(--s-3) 0 var(--s-5); max-width: 18ch; }
-    h2 { margin-bottom: var(--s-4); }
-    h3 { font-size: var(--t-lead); margin-bottom: var(--s-3); }
+    main h1 { font-size: clamp(1.875rem,3.7vw,2.75rem); margin: var(--s-2) 0 var(--s-3); }
+    .inspector h2 { font-size: 1.4rem; margin: var(--s-2) 0 var(--s-3); }
+    h3 { font-size: 1rem; margin-bottom: var(--s-2); }
     p + p { margin-top: var(--s-3); }
-    p, li { max-width: 72ch; }
+    p, li { max-width: 70ch; }
     code { overflow-wrap: anywhere; font-size: var(--t-small); }
-    pre { margin: 0; padding: var(--s-4); border: 1px solid var(--border); background: var(--bg); border-radius: var(--r-1); white-space: pre-wrap; overflow-wrap: anywhere; font: var(--t-small)/1.6 var(--mono); }
+    pre { margin: var(--s-4) 0 0; padding: var(--s-4); border: 1px solid var(--border); background: var(--bg); border-radius: var(--r-1); white-space: pre-wrap; overflow-wrap: anywhere; font: var(--t-small)/1.6 var(--mono); }
     .eyebrow, .label { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
-    .lead { font-size: var(--t-lead); color: var(--text-dim); max-width: 55ch; }
+    .lead { font-size: 1.1rem; color: var(--text-dim); max-width: 65ch; }
     .muted, figcaption { color: var(--text-dim); }
     .small, figcaption { font-size: var(--t-small); }
-    .section { padding-top: var(--s-8); scroll-margin-top: var(--s-5); }
-    .section > .eyebrow { border-top: 1px solid var(--border); padding-top: var(--s-5); margin-bottom: var(--s-2); }
-    .section > p { margin-bottom: var(--s-5); }
-    .section-nav { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); margin-top: var(--s-5); font-size: var(--t-small); }
-    .section-nav a { text-decoration: none; }
-    .section-nav a:hover { text-decoration: underline; }
-    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); padding: var(--s-5); }
-    .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5); }
-    .two > *, .simulator > *, .route > * { min-width: 0; }
-    figcaption { margin-top: var(--s-3); max-width: 75ch; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
-    .toolbar label { display: grid; gap: var(--s-1); font-size: var(--t-small); min-width: 0; max-width: 100%; }
-    .toolbar select { max-width: 100%; }
-    .toolbar button, .toolbar select { flex-shrink: 0; }
-    .note { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); color: var(--text-dim); font-size: var(--t-small); }
-    .takeaway { margin-top: var(--s-5); font-weight: 600; }
-    details { margin-top: var(--s-5); border-top: 1px solid var(--border); padding-top: var(--s-3); }
-    summary { cursor: pointer; font-weight: 600; padding-block: var(--s-2); }
-    details p, details ul { margin-top: var(--s-3); color: var(--text-dim); }
+    figcaption { margin-top: var(--s-3); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
+    .toolbar label { font-size: var(--t-small); }
+    .primary { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    @media (prefers-color-scheme: dark) { .primary { color: var(--bg); } }
+    details { margin-top: var(--s-4); border-top: 1px solid var(--border); padding-top: var(--s-3); font-size: var(--t-small); }
+    summary { cursor: pointer; font-weight: 600; padding-block: var(--s-1); }
+    details p, details ul, details ol { margin-top: var(--s-3); color: var(--text-dim); }
+    .check { display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-small); }
+    .check + .check { margin-top: var(--s-2); }
+    input[type="checkbox"] { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
+    .experiment { margin-top: var(--s-4); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+    .experiment > .label { display: block; margin-bottom: var(--s-2); }
+    .experiment .choice-field { margin-block: var(--s-3); }
+    #http .experiment > .check { margin-top: var(--s-4); gap: var(--s-3); }
+    #http .experiment > .check + p { margin-top: var(--s-2); }
+    .takeaway { margin-top: var(--s-4); font-size: var(--t-small); font-weight: 600; }
     .js-only { display: none; }
-    .ready .js-only { display: flex; }
-    .ready .js-grid { display: grid; }
-    noscript { display: block; margin-top: var(--s-5); padding: var(--s-4); border: 1px solid var(--warn); }
-    .skip-link { position: absolute; left: var(--s-4); top: -5rem; z-index: 20; padding: var(--s-3); background: var(--surface); }
+    .ready .js-only { display: block; }
+    .ready .toolbar.js-only { display: flex; }
+    .skip-link { position: absolute; left: var(--s-4); top: -5rem; z-index: 30; padding: var(--s-3); background: var(--surface); }
     .skip-link:focus { top: var(--s-3); }
-    .route { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: var(--s-3); align-items: center; margin: var(--s-6) 0; }
-    .node { border: 1px solid var(--border-bright); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4); }
-    .node strong, .node span { display: block; }
-    .node span { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-1); }
-    .node.active { outline: 2px solid var(--accent); outline-offset: 2px; }
-    .route-edge { font: var(--t-label)/1.4 var(--mono); text-align: center; color: var(--text-dim); }
-    .route-edge span { display: block; font-size: var(--t-lead); }
-    .route-explanation { font-size: var(--t-small); color: var(--text-dim); margin-bottom: var(--s-5); }
-    .sim-controls { justify-content: space-between; align-items: end; margin-bottom: var(--s-4); }
-    .simulator { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); border: 1px solid var(--border); border-radius: var(--r-2); overflow: hidden; background: var(--surface); }
-    .browser { border-right: 1px solid var(--border); }
-    .browser-bar { padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); background: var(--bg); font: var(--t-label)/1.6 var(--mono); overflow-wrap: anywhere; }
-    .browser-bar strong { color: var(--accent); }
-    .preview { min-height: 22rem; padding: var(--s-5); }
+    .journey-nav { display: none; position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .ready .journey-nav { display: block; }
+    .journey-nav-inner { max-width: 64rem; margin: auto; padding: var(--s-3) var(--s-5) var(--s-2); }
+    .journey-heading { display: flex; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-2); color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); }
+    .step-links { display: grid; grid-template-columns: repeat(6,minmax(7.3rem,1fr)); gap: var(--s-2); overflow-x: auto; padding: 3px 3px var(--s-2); margin: -3px; scrollbar-width: thin; }
+    .step-links a { display: block; padding: var(--s-2); border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); color: var(--text); text-decoration: none; font: var(--t-small)/1.4 var(--mono); }
+    .step-links a[aria-current="step"] { border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
+    .step-links a[aria-disabled="true"] { color: var(--text-dim); border-style: dashed; }
+    #journey { margin-top: var(--s-5); }
+    .workspace { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); border: 1px solid var(--border); border-radius: var(--r-2); background: var(--surface); }
+    .browser { align-self: start; position: sticky; top: calc(var(--web-nav-height,7rem) + 1rem); }
+    .browser-bar { padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); background: var(--bg); border-radius: var(--r-2) 0 0 0; font: var(--t-label)/1.6 var(--mono); }
+    .address-bar { margin-top: var(--s-2); overflow-wrap: anywhere; }
+    .url-part { padding: var(--s-1) 0; min-height: 2rem; border: 0; background: none; font: inherit; }
+    .url-part[aria-pressed="true"] { text-decoration: underline; text-underline-offset: .3em; color: var(--accent); }
+    #browser-state { display: block; margin-top: var(--s-2); color: var(--text-dim); }
+    .preview { min-height: 23rem; padding: var(--s-5); }
     .preview-wait { display: grid; align-content: center; min-height: 18rem; gap: var(--s-3); color: var(--text-dim); }
     .preview-wait strong { font-size: var(--t-lead); color: var(--text); }
     .garden { font-family: Georgia, serif; }
-    .garden h3 { font-family: inherit; font-size: 1.35rem; }
-    .garden .plant-art { display: none; }
+    .garden h3 { font: 600 1.35rem/1.3 Georgia,serif; }
     .garden.styled { font-family: var(--body); }
-    .garden.styled h3 { font-size: 1.75rem; margin: var(--s-2) 0 var(--s-3); }
+    .garden.styled h3 { font: 600 1.75rem/1.2 var(--body); margin: var(--s-2) 0 var(--s-3); }
     .garden.styled .garden-label { color: var(--ok); font: var(--t-label)/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
     .garden.styled .garden-info { padding-top: var(--s-4); border-top: 1px solid var(--border); }
-    .garden .plant-art.loaded { display: block; width: 100%; height: 110px; margin-block: var(--s-4); border: 1px solid var(--border); background: var(--bg); }
-    .garden .image-failed { margin-block: var(--s-4); padding: var(--s-4); border: 1px dashed var(--risk); color: var(--risk); font-size: var(--t-small); }
+    .plant-art { display: block; width: 100%; height: 110px; margin-block: var(--s-4); border: 1px solid var(--border); background: var(--bg); }
+    .image-failed { margin-block: var(--s-4); padding: var(--s-3); border: 1px dashed var(--risk); color: var(--risk); font-size: var(--t-small); }
     .garden button { margin-top: var(--s-4); }
-    .inspector { padding: var(--s-5); }
-    .inspector h3 { margin: var(--s-2) 0 var(--s-3); }
-    .inspector p { color: var(--text-dim); }
-    .inspector pre { margin-top: var(--s-4); min-height: 8rem; }
-    .step-buttons { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); }
-    .step-buttons button { text-align: left; font-size: var(--t-label); }
-    .step-buttons button[aria-current="step"] { border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
-    .step-buttons button span { display: block; }
+    .garden-account { margin-bottom: var(--s-4); padding-bottom: var(--s-3); border-bottom: 1px solid var(--border); }
+    .garden.styled .garden-account { color: var(--ok); font-size: var(--t-small); }
+    .inspector { border-left: 1px solid var(--border); padding: var(--s-5); }
+    .inspector > section + section { margin-top: var(--s-6); }
+    .ready .inspector > section { margin-top: 0; }
+    .inspector section { scroll-margin-top: calc(var(--web-nav-height,7rem) + 1rem); }
+    .inspector section > p:not(.takeaway) { color: var(--text-dim); }
+    .inspector .label { margin-bottom: var(--s-2); }
     .step-footer { justify-content: space-between; margin-top: var(--s-4); }
-    .step-footer .toolbar { gap: var(--s-2); }
-    #journey-status { color: var(--text-dim); font-size: var(--t-small); }
-    .timeline { margin-top: var(--s-5); border-top: 1px solid var(--border); padding-top: var(--s-4); }
-    .timeline h3 { font-size: var(--t-body); }
-    .time-row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) 4.5rem; gap: var(--s-3); align-items: center; font: var(--t-label)/1.5 var(--mono); margin-top: var(--s-2); }
-    .time-track { height: .65rem; border-bottom: 1px solid var(--border); }
-    .time-bar { height: 100%; width: 0; background: var(--accent); }
-    .time-row.pending { color: var(--text-dim); }
-    .time-total { margin-top: var(--s-3); font-size: var(--t-small); }
-    .url-parts { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-bottom: var(--s-4); }
-    .url-parts button { font-size: var(--t-lead); padding: var(--s-3); }
-    button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
-    #url-description { min-height: 4.5rem; }
-    .dns-list { padding: 0; margin: 0; list-style: none; counter-reset: dns; }
-    .dns-list li { counter-increment: dns; display: grid; grid-template-columns: 2rem minmax(0,1fr); gap: var(--s-3); padding-block: var(--s-3); border-bottom: 1px solid var(--border); }
-    .dns-list li::before { content: counter(dns); border: 1px solid var(--border-bright); border-radius: 50%; width: 1.75rem; height: 1.75rem; text-align: center; font: var(--t-small)/1.65rem var(--mono); }
-    .dns-list strong, .dns-list span { display: block; }
-    .dns-list span { color: var(--text-dim); font-size: var(--t-small); }
-    .dns-list .skipped { border-bottom-style: dashed; color: var(--text-dim); }
-    .dns-result { margin-top: var(--s-4); font: var(--t-small)/1.6 var(--mono); color: var(--accent); }
-    .handshake { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: var(--s-3); align-items: center; font: var(--t-small)/1.5 var(--mono); }
-    .handshake .exchanges { display: grid; gap: var(--s-4); }
-    .exchange { border-bottom: 1px solid var(--border-bright); padding-bottom: var(--s-1); text-align: center; }
-    .exchange span { color: var(--accent); }
-    .tls { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px dashed var(--border-bright); }
-    .tls strong { color: var(--accent); }
-    .observer { margin-top: var(--s-5); }
-    .observer pre { margin-top: var(--s-3); }
-    .check-label, .toolbar .check-label { display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-small); }
-    input[type="checkbox"] { width: 1.2rem; height: 1.2rem; }
-    .response-codes { display: grid; gap: var(--s-3); margin-top: var(--s-4); }
-    .response-codes p { padding-bottom: var(--s-3); border-bottom: 1px solid var(--border); }
-    .response-codes strong { font-family: var(--mono); margin-right: var(--s-2); }
-    .layer-controls { margin-bottom: var(--s-4); }
-    .layer-controls label { display: flex; flex-direction: row; align-items: center; gap: var(--s-2); }
-    .layers-preview { min-height: 21rem; }
-    .layer-list { margin: 0; padding-left: var(--s-5); }
-    .layer-list li + li { margin-top: var(--s-4); }
-    .session-board { margin-top: var(--s-4); }
-    .session-state { border-top: 2px solid var(--border-bright); padding-top: var(--s-3); }
-    .session-state code { display: block; margin: var(--s-3) 0; }
-    .session-state p { font-size: var(--t-small); color: var(--text-dim); }
-    #auth-result { margin-top: var(--s-4); min-height: 3rem; font-weight: 600; }
-    .source-list { padding-left: var(--s-5); }
-    .source-list li + li { margin-top: var(--s-2); }
-    footer { margin-top: var(--s-8); padding-top: var(--s-5); border-top: 1px solid var(--border); }
+    #journey-status { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); }
+    .time-row { display: grid; grid-template-columns: 6rem minmax(0,1fr) 4.5rem; gap: var(--s-3); align-items: center; margin-top: var(--s-2); font: var(--t-label)/1.5 var(--mono); }
+    .time-track { height: .6rem; background: var(--border); }
+    .time-bar { height: 100%; background: var(--accent); }
+    footer { margin-top: var(--s-5); font-size: var(--t-small); }
+    footer li + li { margin-top: var(--s-2); }
+    noscript { display: block; margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); }
     @media (max-width: 760px) {
-      main { padding: var(--s-5) var(--s-4) var(--s-7); }
-      .section { padding-top: var(--s-7); }
-      .two, .simulator { grid-template-columns: minmax(0,1fr); }
-      .browser { border-right: 0; border-bottom: 1px solid var(--border); }
-      .preview { min-height: 0; }
-      .preview-wait { min-height: 10rem; }
-      .route { gap: var(--s-2); }
-      .node { padding: var(--s-2); font-size: var(--t-small); }
-      .node span { font-size: var(--t-label); }
-      .route-edge { font-size: .65rem; }
-      .step-buttons { grid-template-columns: repeat(3, minmax(0,1fr)); }
-      .panel, .inspector { padding: var(--s-4); }
-      .url-parts button { font-size: var(--t-body); }
-      .handshake { gap: var(--s-2); font-size: var(--t-label); }
-      .time-row { grid-template-columns: 5.5rem minmax(0,1fr) 4rem; gap: var(--s-2); }
-    }
-    @media (max-width: 500px) {
-      .route { grid-template-columns: minmax(0,1fr); }
-      .route .node { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); align-items: baseline; }
-      .route-edge { display: flex; gap: var(--s-3); justify-content: center; align-items: center; font-size: var(--t-label); }
-      .route-edge span { transform: rotate(90deg); }
-      .sim-controls > label, .sim-controls select { width: 100%; }
+      main { padding: var(--s-4); }
+      .journey-nav-inner { padding-inline: var(--s-4); }
+      .workspace { grid-template-columns: minmax(0,1fr); }
+      .browser { position: static; }
+      .browser-bar { border-radius: var(--r-2) var(--r-2) 0 0; }
+      .preview { min-height: 0; padding: var(--s-4); }
+      .preview-wait { min-height: 7rem; }
+      .inspector { border-left: 0; border-top: 1px solid var(--border); padding: var(--s-4); }
+      .step-links { grid-template-columns: repeat(6,minmax(7.3rem,1fr)); }
+      .journey-heading > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     }
     @media print {
-      .section-nav, .js-only, .ready .js-only, .skip-link { display: none; }
+      .journey-nav, .js-only, .ready .js-only, .ready .toolbar.js-only, .skip-link { display: none !important; }
       main { max-width: none; padding: 0; }
-      .section { padding-top: var(--s-6); }
-      .panel, figure { break-inside: avoid; }
-      details { display: block; }
+      .workspace { display: block; border: 0; }
+      .browser { position: static; }
+      #static-url[hidden] { display: inline !important; }
+      .inspector { border: 0; padding: 0; }
+      .inspector > section[hidden] { display: block !important; }
+      .ready .inspector > section { margin-top: var(--s-6); break-inside: avoid; }
+      details[hidden] { display: block !important; }
     }
   </style>
   <link rel="stylesheet" href="assets/shared.css">
 </head>
-<body data-guide="web">
+<body>
 <a class="skip-link" href="#main">Skip to guide</a>
 <nav class="site-nav" aria-label="Collection"><div class="site-nav-inner"><a class="site-home" href="index.html">← Interactive Guides</a></div></nav>
+<nav class="journey-nav" aria-label="Browser journey">
+  <div class="journey-nav-inner">
+    <div class="journey-heading"><span>How the web works</span><span id="journey-position">1 / 6</span></div>
+    <div class="step-links">
+      <a href="#address" data-step="0" aria-current="step">1. URL</a>
+      <a href="#dns" data-step="1">2. DNS</a>
+      <a href="#connection" data-step="2">3. Connect</a>
+      <a href="#http" data-step="3">4. Request</a>
+      <a href="#resources" data-step="4">5. Resources</a>
+      <a href="#rendering" data-step="5">6. Use the page</a>
+    </div>
+  </div>
+</nav>
 <main id="main">
   <header>
-    <div class="eyebrow">Web Fundamentals</div>
+    <div class="eyebrow">Web fundamentals</div>
     <h1>What happens when you open a website?</h1>
-    <p class="lead">Follow one visit from URL to pixels: find a server, request resources, build a page.</p>
-    <nav class="section-nav" aria-label="Guide sections">
-      <a href="#journey">Try the journey</a><a href="#address">The address</a><a href="#dns">DNS</a><a href="#connection">TCP &amp; HTTPS</a><a href="#http">HTTP</a><a href="#rendering">The page</a><a href="#sessions">Cookies &amp; sign-in</a>
-    </nav>
-    <noscript>Demos need JavaScript. The explanations still work: start with “Read the address.”</noscript>
+    <p class="lead">One browser. One visit. Follow the address to a working page, and experiment along the way.</p>
+    <noscript>The interactive browser needs JavaScript. Read the six steps below, including how cookies identify a returning user and how cached resources skip requests.</noscript>
   </header>
-
-  <section id="journey" class="section" aria-labelledby="journey-title" data-tab-label="Journey" data-tab-note="URL to pixels">
-    <div class="eyebrow">The whole journey</div>
-    <h2 id="journey-title">One address. Several conversations.</h2>
-    <figure>
-      <div class="route" aria-label="A browser asks a DNS resolver for an address, then contacts the web server directly.">
-        <div class="node" id="node-dns"><strong>DNS resolver</strong><span>Finds an address</span></div>
-        <div class="route-edge">resolves name<span aria-hidden="true">⇄</span></div>
-        <div class="node active" id="node-browser"><strong>Your browser</strong><span>Requests &amp; displays</span></div>
-        <div class="route-edge">requests resources<span aria-hidden="true">⇄</span></div>
-        <div class="node" id="node-server"><strong>Web server</strong><span>Returns resources</span></div>
-      </div>
-      <p class="route-explanation">DNS finds the address; the browser contacts the server—not through DNS.</p>
-      <div class="toolbar sim-controls js-only">
-        <label>Visit conditions
-          <select id="scenario" data-choice>
-            <option value="first">First visit</option><option value="repeat">Repeat visit: cached resources</option><option value="slow">Slow server</option><option value="image">Missing image</option><option value="dns">DNS failure</option><option value="cert">Invalid certificate</option>
-          </select>
-        </label>
-        <label>Requested path
-          <select id="path" data-choice><option value="/plants">/plants → 200</option><option value="/missing">/missing → 404</option><option value="/broken">/broken → 500</option></select>
-        </label>
-      </div>
-      <div class="simulator">
-        <div class="browser">
-          <div class="browser-bar"><strong>Simulated browser</strong><br><span id="browser-url">https://garden.example/plants</span></div>
-          <div class="preview" id="browser-preview"><div class="preview-wait"><strong>A page starts with a request.</strong><span>Use “Next step” to follow this visit.</span></div></div>
+  <section id="journey" aria-label="Follow a browser visit">
+    <div class="workspace">
+      <div class="browser" aria-label="Simulated browser">
+        <div class="browser-bar">
+          <strong>Simulated browser · no real requests</strong>
+          <div class="address-bar" aria-label="Example address"><span id="static-url">https://garden.example/plants</span><span class="js-only" id="interactive-url"><button type="button" class="url-part" data-url-part="scheme" aria-pressed="true" aria-label="Inspect HTTPS scheme">https://</button><button type="button" class="url-part" data-url-part="host" aria-pressed="false" aria-label="Inspect hostname">garden.example</button><button type="button" class="url-part" data-url-part="path" aria-pressed="false" id="url-path-part" aria-label="Inspect requested path">/plants</button></span></div>
+          <span id="browser-state">An address, not a page yet</span>
         </div>
-        <div class="inspector">
-          <div class="label" id="step-label">Step 1 of 6 · Address</div>
-          <h3 id="step-title">Read the address</h3>
-          <p id="step-description">The browser separates the scheme, hostname, and path. It has not contacted the server yet.</p>
-          <pre id="step-wire">scheme: https
-hostname: garden.example
-path: /plants</pre>
-        </div>
+        <div class="preview" id="browser-preview"><div class="preview-wait"><strong>A page starts with a request.</strong><span>DNS finds the server, HTTPS secures the connection, and HTTP carries the resources the browser displays.</span></div></div>
       </div>
-      <div class="step-buttons js-only js-grid" aria-label="Journey steps">
-        <button type="button" data-step="0" aria-current="step">1 <span>Address</span></button><button type="button" data-step="1">2 <span>DNS</span></button><button type="button" data-step="2">3 <span>Connect</span></button><button type="button" data-step="3">4 <span>HTTP</span></button><button type="button" data-step="4">5 <span>Resources</span></button><button type="button" data-step="5">6 <span>Render</span></button>
-      </div>
-      <div class="toolbar step-footer js-only">
-        <div class="toolbar"><button type="button" id="previous" disabled>← Back</button><button type="button" id="next">Next step →</button><button type="button" id="replay">Start over</button></div>
-        <p id="journey-status" role="status">Step 1 of 6. First visit.</p>
-      </div>
-      <details class="timing-details"><summary>Timing breakdown</summary><div class="timeline js-only js-grid">
-        <h3>Where the time goes</h3>
-        <div id="timeline-rows"></div>
-        <p class="time-total" id="time-total">Illustrative elapsed time: 0 ms</p>
-        <p class="small muted">Invented timings; shared 0–1,800 ms scale.</p>
-      </div></details>
-      <figcaption>Try a failure to see which stage changes.</figcaption>
-    </figure>
-    <details><summary>Model notes</summary><p>This simulated HTTPS visit uses HTTP/2 over TCP + TLS; it is not a network diagnostic. <code>garden.example</code> and <code>192.0.2.10</code> are reserved examples. No real requests, credentials, or cookies are used.</p><p>Timings are invented. Real requests and rendering overlap; the stepper separates them for clarity. DNS, certificate, HTTP, and resource failures affect different stages.</p></details>
-  </section>
-
-  <section id="address" class="section" aria-labelledby="address-title" data-tab-label="URL" data-tab-note="Read the address">
-    <div class="eyebrow">1 · The address</div>
-    <h2 id="address-title">Read the address.</h2>
-    <figure class="panel">
-      <div class="url-parts js-only" aria-label="Parts of the example URL">
-        <button type="button" data-url-part="scheme" aria-pressed="true">https://</button><button type="button" data-url-part="host" aria-pressed="false">garden.example</button><button type="button" data-url-part="path" aria-pressed="false" id="url-path-part">/plants</button>
-      </div>
-      <p id="url-description" role="status"><strong>Scheme: HTTPS.</strong> Use HTTP over an encrypted connection. The scheme tells the browser how to communicate.</p>
-      <figcaption>Choose a URL part to inspect it.</figcaption>
-    </figure>
-    <p class="takeaway">A URL identifies a resource—not the page itself.</p>
-    <details><summary>Model notes</summary><p>“Server” describes a role: software that responds to requests. It can run on one computer or a large fleet. The browser is the client. The same computer can play both roles in different conversations.</p><p>A URL can also contain a query such as <code>?sort=name</code> and a fragment such as <code>#care</code>. The query is sent in the request; the fragment is handled by the browser and is not sent in the HTTP request.</p></details>
-  </section>
-
-  <section id="dns" class="section" aria-labelledby="dns-title" data-tab-label="DNS" data-tab-note="Find the server">
-    <div class="eyebrow">2 · Domain Name System</div>
-    <h2 id="dns-title">Turn a name into an address.</h2>
-    <p>DNS links names like <code>garden.example</code> to the IP addresses connections use.</p>
-    <figure class="panel">
-      <div class="toolbar js-only" style="margin-bottom:var(--s-4)"><label class="check-label"><input type="checkbox" id="dns-cached"> A usable DNS answer is already cached</label></div>
-      <ol class="dns-list" id="dns-list">
-        <li><div><strong>Check nearby caches</strong><span>The browser or OS may have an answer.</span></div></li>
-        <li><div><strong>Ask a recursive resolver</strong><span>Checks its cache, then looks further if needed.</span></div></li>
-        <li><div><strong>Follow referrals when needed</strong><span>Root → top-level domain → authoritative nameserver.</span></div></li>
-        <li><div><strong>Return the address</strong><span>Cache it for its time to live (TTL).</span></div></li>
-      </ol>
-      <p class="dns-result" id="dns-result" role="status">Illustrative answer: garden.example → 192.0.2.10</p>
-      <figcaption>Caching skips lookups. DNS does not deliver the webpage.</figcaption>
-    </figure>
-    <details><summary>Model notes</summary><p>The checkbox changes only this DNS illustration. “Repeat visit” in Journey combines DNS caching with cached page resources.</p><p>A recursive resolver does lookups for its clients. An authoritative nameserver publishes records for a DNS zone. A resolver can ask several servers to find an answer; cached referrals often shorten this process.</p><p>A record’s TTL limits how long that cached answer is normally reusable. Changing a DNS record does not instantly replace every cached copy. One name can also return several addresses, or point to another name.</p><p>The example domain is reserved for documentation. The referral sequence here explains the real mechanism; it is not a live lookup of <code>.example</code>.</p></details>
-  </section>
-
-  <section id="connection" class="section" aria-labelledby="connection-title" data-tab-label="HTTPS" data-tab-note="Connect securely">
-    <div class="eyebrow">3 · TCP, TLS &amp; certificates</div>
-    <h2 id="connection-title">Connect, then encrypt.</h2>
-    <div class="two">
-      <figure class="panel">
-        <h3>TCP delivers bytes</h3>
-        <div class="handshake">
-          <strong>Browser</strong><div class="exchanges"><div class="exchange">SYN <span>→</span></div><div class="exchange"><span>←</span> SYN + ACK</div><div class="exchange">ACK <span>→</span></div></div><strong>Server</strong>
-        </div>
-        <p class="small muted" style="margin-top:var(--s-4)">TCP orders bytes and retransmits lost data. It does not encrypt.</p>
-        <div class="tls"><strong>TLS protects them.</strong><p class="small">Check the certificate; establish encryption keys.</p></div>
-        <figcaption>New HTTP/2 connection: TCP → TLS → HTTP.</figcaption>
-      </figure>
-      <div class="panel">
-        <h3>Three identity checks</h3>
-        <div class="concept-grid">
-          <div class="concept-card"><h4>Hostname</h4><p>Certificate covers the requested name.</p></div>
-          <div class="concept-card"><h4>Trust</h4><p>Validity period and signature chain pass.</p></div>
-          <div class="concept-card"><h4>Private key</h4><p>Handshake verifies possession.</p></div>
-        </div>
-        <p class="small muted">A certificate authenticates an endpoint—not an honest business.</p>
-      </div>
-    </div>
-    <figure class="panel observer">
-      <h3>What can an observer read?</h3>
-      <div class="toolbar js-only"><label class="check-label"><input type="checkbox" id="encrypted" checked> Protect this example with HTTPS</label></div>
-      <pre id="observer-output" role="status">Encrypted HTTP request
-Path, headers, and body are not readable by a passive network observer.</pre>
-      <p class="small muted" style="margin-top:var(--s-3)">HTTPS hides content, not all metadata. It is not anonymity.</p>
-      <figcaption>This switch changes only the observer example.</figcaption>
-    </figure>
-    <details><summary>Model notes</summary><p>Destination IP addresses, timing, and traffic sizes can remain visible. DNS or connection setup may expose the hostname.</p><p>A valid certificate does not prove content is true or software is bug-free. Try “Invalid certificate” in Journey: this model stops before sending HTTP.</p><p>HTTP/1.1 and HTTP/2 normally use TCP. HTTPS adds TLS. HTTP/3 uses QUIC over UDP, with TLS security integrated into QUIC; it does not use the TCP handshake shown here.</p><p>Browsers can reuse existing connections and resume secure sessions. Not every click repeats every setup step. Our repeat-visit preset deliberately uses a new connection so you can isolate the effects of caching.</p></details>
-  </section>
-
-  <section id="http" class="section" aria-labelledby="http-title" data-tab-label="HTTP" data-tab-note="Ask and answer">
-    <div class="eyebrow">4 · Request &amp; response</div>
-    <h2 id="http-title">Resources, not screenshots.</h2>
-    <div class="two">
-      <figure class="panel">
-        <h3>Browser asks</h3>
-        <pre id="http-request">GET /plants
+      <div class="inspector">
+        <section id="address" data-journey-step aria-labelledby="address-title">
+          <div class="label">1 · Read the URL</div>
+          <h2 id="address-title" tabindex="-1">An address is a set of instructions.</h2>
+          <p>The scheme tells the browser how to communicate, the hostname identifies the destination, and the path identifies a resource.</p>
+          <pre>https://garden.example/plants
+scheme  hostname       path</pre>
+          <div class="experiment js-only"><span class="label">Try it · select part of the address bar</span><p id="url-description" role="status"><strong>Scheme: HTTPS.</strong> Use HTTP over an encrypted connection.</p></div>
+          <p class="takeaway">The URL identifies a resource—not the page itself.</p>
+          <details><summary>Is the path a file? What about ? and #?</summary><p>The server chooses what a path means; it need not point to a file on disk. A query such as <code>?sort=name</code> is sent to the server. A fragment such as <code>#care</code> stays in the browser, not the HTTP request.</p><p>The browser is the client; the server is software that responds. That server role might be fulfilled by one computer or a large fleet.</p></details>
+        </section>
+        <section id="dns" data-journey-step aria-labelledby="dns-title">
+          <div class="label">2 · Find the server</div>
+          <h2 id="dns-title" tabindex="-1">Turn a name into an address.</h2>
+          <p id="dns-description">DNS resolves garden.example to an IP address. The browser can then contact the web server directly—not through DNS.</p>
+          <pre id="dns-wire">garden.example → 192.0.2.10
+Source: recursive resolver’s answer</pre>
+          <div class="experiment js-only"><span class="label">Try it · change this lookup</span><label class="check"><input id="dns-cached" type="checkbox"> A usable answer is cached locally</label><label class="check"><input id="dns-failure" type="checkbox"> No usable DNS answer</label></div>
+          <p class="takeaway">DNS finds an address. It does not deliver the webpage.</p>
+          <details><summary>Where does the DNS answer come from?</summary><ol><li>The browser or OS checks for a usable cached answer.</li><li>A recursive resolver checks its cache.</li><li>On a cache miss, it follows referrals: root → top-level domain → authoritative nameserver.</li><li>The answer can be cached for its time to live (TTL).</li></ol><p>Cached referrals can shorten the process. A name may resolve to several addresses or point to another name. A record change does not instantly replace every cached copy.</p><p><code>.example</code> is reserved for documentation. This is an illustration of DNS, not a live lookup.</p></details>
+        </section>
+        <section id="connection" data-journey-step aria-labelledby="connection-title">
+          <div class="label">3 · Connect securely</div>
+          <h2 id="connection-title" tabindex="-1">Connect, then encrypt.</h2>
+          <p id="connection-description">This visit opens a TCP connection, then uses TLS to check the server’s identity and establish encryption keys.</p>
+          <pre id="connection-wire">TCP: SYN → SYN + ACK → ACK
+TLS: certificate checks + encryption keys
+HTTP/2 connection ready</pre>
+          <div class="experiment js-only"><span class="label">Try it · check the server’s identity</span><label class="check"><input id="invalid-cert" type="checkbox"> Certificate does not cover garden.example</label></div>
+          <p class="takeaway">TCP delivers ordered bytes. TLS protects them.</p>
+          <details><summary>What does the certificate prove?</summary><p>The certificate must cover the hostname, pass validity and trust-chain checks, and the handshake must verify possession of its private key. This authenticates an endpoint—not an honest business or truthful content.</p></details>
+          <details><summary>What can a network observer see?</summary><p>HTTPS protects HTTP paths, headers, and bodies from a passive network observer. Destination IP addresses, timing, and traffic sizes can remain visible. DNS or connection setup may expose the hostname. HTTPS is not anonymity.</p><p>Without HTTPS, HTTP content is readable on the network and an active attacker may alter it. The server receiving an HTTPS request can still read its contents.</p></details>
+          <details><summary>Does every visit need TCP and TLS setup?</summary><p>Browsers can reuse connections and resume secure sessions. This model uses a new HTTP/2 connection over TCP + TLS. The resource-cache toggle later changes only how page assets load, not this connection.</p><p>HTTP/1.1 and HTTP/2 normally use TCP. HTTP/3 uses QUIC over UDP, with TLS security integrated into QUIC—not the TCP handshake shown here.</p></details>
+        </section>
+        <section id="http" data-journey-step aria-labelledby="http-title">
+          <div class="label">4 · Request the page</div>
+          <h2 id="http-title" tabindex="-1">Ask for a resource. Receive HTML.</h2>
+          <p id="http-description">The browser requests /plants. The server returns a status, headers, and an HTML response body—not a screenshot.</p>
+          <pre id="http-wire">GET /plants
 Host: garden.example
-Accept: text/html</pre>
-        <p class="small muted" style="margin-top:var(--s-3)"><strong>GET</strong> requests a resource; headers carry metadata.</p>
-        <figcaption>Readable sketch, not literal HTTP/2 bytes.</figcaption>
-      </figure>
-      <div class="panel">
-        <h3>Server answers</h3>
-        <pre id="http-response">Status: 200 OK
+Accept: text/html
+[No session cookie]
+
+Response: 200 OK
 Content-Type: text/html
+Cache-Control: private, no-store
 
 &lt;h1&gt;Your small garden&lt;/h1&gt;
+&lt;p&gt;Welcome, guest.&lt;/p&gt;
 &lt;link rel="stylesheet" href="/style.css"&gt;</pre>
-        <div class="response-codes"><p><strong>200</strong> The request succeeded.</p><p><strong>404</strong> This resource was not found.</p><p><strong>500</strong> The server encountered an error.</p></div>
+          <div class="experiment js-only"><span class="label">Try it · change this request</span><label for="path">Requested path</label><select id="path" data-choice><option value="/plants">/plants · 200 OK</option><option value="/missing">/missing · 404 Not Found</option><option value="/broken">/broken · 500 Server Error</option></select><label class="check"><input id="signed-in" type="checkbox" aria-describedby="session-note"> Signed-in browser · send a session cookie</label><p class="small muted" id="session-note" role="status">Guest visit: no session cookie. The server returns the guest version of the page.</p><label class="check"><input id="slow-server" type="checkbox"> Slow server response</label><p class="small muted" id="server-timing">Illustrative response wait: 160 ms.</p></div>
+          <p class="takeaway">404 and 500 are server answers. DNS and TLS failures stop this visit before HTTP.</p>
+          <details id="sessions"><summary>How does the server recognize a signed-in user?</summary><p>HTTP has no built-in signed-in identity. This toggle assumes an earlier successful sign-in: the server issued a session ID, and the browser stored its cookie. It compares two versions of this request; it does not submit a login form.</p><pre>Earlier sign-in:
+POST /login → 200 OK
+Set-Cookie: demo_session=demo-7; Path=/; Secure; HttpOnly; SameSite=Lax
+
+This visit:
+GET /plants
+Cookie: demo_session=demo-7
+Server checks session → HTML with a personal greeting</pre><p>The greeting comes from the server’s HTML, not from JavaScript or cached assets. A cookie carries an ID—not a password or automatic permission. The server must accept the session and check permissions separately. If its session expires, the cookie alone cannot restore it.</p><p>This public page is available to guests too, so both visits can return <code>200 OK</code>. A protected page could reject a guest instead. Cookie sessions are one design; applications can use other credentials, such as bearer tokens.</p></details>
+          <details><summary>What protects a session cookie?</summary><p>Keep real session IDs secret. <code>Secure</code> restricts normal sending to secure transport; <code>HttpOnly</code> blocks page JavaScript from reading the cookie, but the browser still sends it. <code>SameSite</code> limits cross-site sending and helps mitigate some CSRF attacks, not all attacks.</p><p>Domain and path rules also affect sending. Responses use <code>Set-Cookie</code> to store a cookie; requests use <code>Cookie</code> to send matching name/value pairs without their attributes. A real sign-in system also needs safe credential handling, session rotation, expiry, and permission checks. No real cookie is set here.</p></details>
+          <details><summary>What do the method, headers, and status mean?</summary><p><code>GET</code> requests a resource; headers carry metadata. <code>200</code> means success, <code>404</code> means this resource was not found, and <code>500</code> means a server error. A browser can display an error response’s HTML too.</p><p>A <code>POST</code> request can carry a body, such as form data. A redirect, such as <code>301</code> or <code>302</code> with a <code>Location</code> header, leads to another request. HTTP also carries JSON, images, and other data; <code>Content-Type</code> describes the body.</p><p>These are readable message sketches, not literal HTTP/2 bytes. HTTP/2 encodes messages in binary frames.</p></details>
+        </section>
+        <section id="resources" data-journey-step aria-labelledby="resources-title">
+          <div class="label">5 · Load resources</div>
+          <h2 id="resources-title" tabindex="-1">One page. More requests.</h2>
+          <p id="resources-description">The HTML references CSS, an image, and JavaScript. The browser discovers and fetches them, often concurrently.</p>
+          <pre id="resources-wire">/style.css  200 OK
+/plant.svg  200 OK
+/app.js     200 OK</pre>
+          <div class="experiment js-only" id="resource-controls"><span class="label">Try it · change how resources load</span><label class="check"><input id="resources-cached" type="checkbox"> Fresh resources already in the browser cache</label><label class="check"><input id="load-css" type="checkbox" checked> Load CSS · presentation</label><label class="check"><input id="load-js" type="checkbox" checked> Load JavaScript · button behavior</label><label class="check"><input id="missing-image" type="checkbox"> Image request returns 404</label></div>
+          <p class="takeaway">A missing image need not break the page.</p>
+          <details><summary>What makes a repeat visit faster—or out of date?</summary><p>The browser can reuse fresh cached resources instead of downloading them again. A stale response can sometimes be validated; <code>304 Not Modified</code> lets it reuse the cached body.</p><p>The toggle changes only the public CSS, image, and script. A fresh cache hit means no network request for that resource; the page looks the same. A missing-image experiment assumes no usable cached image, so that request still returns 404. DNS caching is separate, in step 2. The HTML is always fetched here, with <code>Cache-Control: private, no-store</code>, so personalized content is not reused between visitors. Cache behavior depends on headers and browser state. <code>Cache-Control: no-cache</code> means validate before reuse, not “never store.”</p></details>
+        </section>
+        <section id="rendering" data-journey-step aria-labelledby="rendering-title">
+          <div class="label">6 · Use the page</div>
+          <h2 id="rendering-title" tabindex="-1">Resources become a working page.</h2>
+          <p id="rendering-description">The browser parses HTML, applies CSS, lays out elements, and paints pixels. JavaScript handles the garden’s watering button. Try it in the browser.</p>
+          <pre id="rendering-wire">HTML → document tree
+CSS → styles and layout → paint
+JavaScript → click handler</pre>
+          <p class="takeaway">HTML supplies structure, CSS presentation, and JavaScript custom behavior.</p>
+          <details><summary>Does rendering really happen last?</summary><p>No. The browser can discover resources while parsing HTML, fetch several concurrently, and paint content before all resources arrive. Some stylesheets and scripts can delay rendering or parsing. The steps separate overlapping activities for clarity.</p><p>Not every interaction requires JavaScript: links, native forms, and expandable details can work without it. The custom watering action in this example needs a script.</p></details>
+        </section>
       </div>
     </div>
-    <p class="takeaway">404 and 500 are HTTP responses. DNS failure means HTTP never started.</p>
-    <details><summary>Model notes</summary><p>Change “Requested path” in Journey to compare responses. HTTP/2 encodes messages in binary frames. Some requests, such as a form submission using POST, also carry a body.</p><p>A redirect response, such as 301 or 302 with a <code>Location</code> header, can send the browser to another URL. The browser then makes another request.</p><p>HTTP is not only for HTML. An API might return JSON; an image request returns image data. The <code>Content-Type</code> header describes the response body’s format.</p></details>
-  </section>
-
-  <section id="rendering" class="section" aria-labelledby="rendering-title" data-tab-label="Rendering" data-tab-note="Build the page">
-    <div class="eyebrow">5 &amp; 6 · Resources &amp; rendering</div>
-    <h2 id="rendering-title">Turn resources into pixels.</h2>
-    <p>Parse HTML, apply CSS, lay out elements, paint. Toggle resources to see what each adds.</p>
-    <figure class="panel">
-      <div class="toolbar layer-controls js-only">
-        <label><input id="layer-css" type="checkbox" checked> CSS</label><label><input id="layer-image" type="checkbox" checked> Image</label><label><input id="layer-js" type="checkbox" checked> JavaScript</label>
-      </div>
-      <div class="two">
-        <div class="layers-preview" id="layers-preview"><h3>Your small garden</h3><p>HTML supplies the content. CSS changes its presentation. JavaScript can make a watering button respond.</p></div>
-        <div class="concept-grid">
-          <div class="concept-card"><h3>HTML</h3><p>Structure: headings, links, controls.</p></div>
-          <div class="concept-card"><h3>CSS</h3><p>Presentation: fonts, colors, layout.</p></div>
-          <div class="concept-card"><h3>JavaScript</h3><p>Behavior: this demo’s watering button.</p></div>
-        </div>
-      </div>
-      <figcaption>A missing image need not break the page.</figcaption>
-    </figure>
-    <p class="takeaway">One page often means many requests.</p>
-    <details><summary>Model notes</summary><p>The preview is a controlled illustration, not another webpage load. Images carry separate data; scripts can handle events and change the document.</p><p>The browser need not wait for everything: it can discover resources while parsing HTML, fetch several concurrently, and show content early. Some stylesheets and scripts can delay rendering or parsing. Our stepper separates these activities so you can see their roles.</p><p>Not all interactivity needs JavaScript: links, native form submission, and expandable <code>details</code> elements can work without it. JavaScript powers the custom watering action in this example.</p></details>
-    <details><summary>Why is a repeat visit sometimes faster—or out of date?</summary><p>A browser may reuse fresh cached CSS, images, and scripts instead of downloading them again. A stale response can sometimes be validated with the server; a <code>304 Not Modified</code> response lets the browser reuse its cached body.</p><p>Our repeat-visit preset assumes a usable DNS answer and fresh cached assets, but fetches the HTML again over a new connection. Real cache behavior depends on headers and browser state. <code>Cache-Control: no-cache</code> means validate before reuse, not “never store.”</p></details>
-  </section>
-
-  <section id="sessions" class="section" aria-labelledby="sessions-title" data-tab-label="Sessions" data-tab-note="Remember sign-in">
-    <div class="eyebrow">One more request · Cookies &amp; authentication</div>
-    <h2 id="sessions-title">Remember a sign-in.</h2>
-    <p>HTTP has no built-in signed-in identity. Here, the server issues a session ID after sign-in; a cookie carries it on later matching requests.</p>
-    <figure class="panel">
-      <div class="toolbar js-only">
-        <button type="button" id="sign-in">Simulate successful sign-in</button><button type="button" id="account">Request /account</button><button type="button" id="expire" disabled>Expire server session</button><button type="button" id="sign-out" disabled>Sign out</button>
-      </div>
-      <div class="two session-board">
-        <div class="session-state"><h3>Browser</h3><code id="cookie-state">No session cookie</code><p>Stores a name/value pair with sending rules.</p></div>
-        <div class="session-state"><h3>Server</h3><code id="server-state">No active session</code><p>Links an opaque ID to a user and expiry.</p></div>
-      </div>
-      <p id="auth-result" role="status">Try requesting /account before signing in.</p>
-      <pre id="auth-wire">No request yet.</pre>
-      <figcaption>A cookie works only while the server accepts its session.</figcaption>
-    </figure>
-    <div class="concept-grid" style="margin-top:var(--s-5)">
-      <div class="concept-card"><h3>Cookie ≠ password</h3><p>This cookie holds a session ID. Keep real IDs secret: theft can enable impersonation.</p></div>
-      <div class="concept-card"><h3>Identity ≠ permission</h3><p>Authentication: who are you? Authorization: what may you do?</p></div>
+    <div class="toolbar step-footer js-only" aria-label="Journey controls">
+      <div class="toolbar"><button type="button" id="previous" disabled>← Back</button><button type="button" id="next" class="primary">Next step →</button></div>
+      <button type="button" id="replay">Start over</button>
     </div>
-    <details><summary>Model notes</summary><p>This toy login assumes credentials passed. It never requests a password, sets a real cookie, or persists state; reloading clears the demo. Cookies can also store preferences, not just session IDs.</p><p>Being signed in does not grant access to other users’ files or administrator controls. The server must check permissions separately.</p></details>
-    <details><summary>What do Secure, HttpOnly, and SameSite mean?</summary><p><code>Secure</code> restricts the cookie to secure transport in normal use. <code>HttpOnly</code> prevents page JavaScript from reading it through <code>document.cookie</code>; the browser can still send it with requests.</p><p><code>SameSite</code> controls sending in cross-site contexts and helps limit some cross-site request forgery (CSRF) attacks. It is not a complete security solution. Domain and path rules also affect which requests receive a cookie.</p><p>The response uses <code>Set-Cookie</code> to store a cookie. Later requests use <code>Cookie</code> to send matching name/value pairs. The cookie’s attributes are not repeated in that request header.</p></details>
-    <details><summary>Are cookies the only way to authenticate?</summary><p>No. Applications can use other credentials, including bearer tokens in an <code>Authorization</code> header. Passkeys, passwords, and identity providers are different ways to establish identity. This guide illustrates only one common server-side session design.</p><p>A real sign-in system also needs safe credential handling, session rotation, expiry, server-side permission checks, and defenses against attacks. This demo is not a login implementation to copy into a product.</p></details>
+    <p id="journey-status" class="js-only" role="status">Step 1 of 6 · Read the URL.</p>
+    <details id="timing-details" class="js-only"><summary>Where did this visit spend its time?</summary><div id="timeline-rows"></div><p id="time-total" class="small muted"></p><p>Invented times, not measurements. Bars share a 0–1,800 ms scale. Actual requests and rendering overlap.</p></details>
   </section>
-
-  <footer aria-labelledby="sources-title">
-    <h2 id="sources-title">Keep the model.</h2>
-    <p>Name → address → connection → HTTP → pixels. Sessions connect later requests.</p>
-    <details><summary>Sources &amp; further reading</summary>
-    <ul class="source-list">
-      <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Web_standards/How_the_web_works">MDN — How the web works</a></li>
-      <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name">MDN — Domain names and DNS</a></li>
-      <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview">MDN — HTTP overview</a></li>
-      <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching">MDN — HTTP caching</a></li>
-      <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies">MDN — HTTP cookies</a></li>
-      <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP">MDN — Evolution of HTTP, including HTTP/3</a></li>
-      <li><a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security">MDN — Transport Layer Security</a></li>
-      <li><a href="https://letsencrypt.org/how-it-works/">Let’s Encrypt — Domain validation and certificates</a></li>
-      <li><a href="https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/How_browsers_work">MDN — How browsers work</a></li>
-    </ul>
+  <footer>
+    <details><summary>Scope &amp; sources</summary>
+      <p>AI-generated learning aid. This is a controlled simulation of HTTP/2 over TCP + TLS, not a network diagnostic. <code>garden.example</code> and <code>192.0.2.10</code> are reserved examples. No real requests, credentials, cookies, or persistent state are used. Reloading clears the demo.</p>
+      <ul>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Web_standards/How_the_web_works">MDN — How the web works</a></li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name">MDN — Domain names and DNS</a></li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview">MDN — HTTP overview</a></li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching">MDN — HTTP caching</a></li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies">MDN — HTTP cookies</a></li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP">MDN — Evolution of HTTP</a></li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security">MDN — Transport Layer Security</a></li>
+        <li><a href="https://letsencrypt.org/how-it-works/">Let’s Encrypt — Certificates</a></li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/How_browsers_work">MDN — How browsers work</a></li>
+      </ul>
     </details>
-    <details><summary>Model notes</summary><p>AI-generated learning aid. Protocols and browsers have more detail than this model shows. Times, server responses, session IDs, and resources are illustrative. Verify important details against the sources.</p></details>
   </footer>
 </main>
-<script>
-(() => {
-  'use strict';
-  const $ = id => document.getElementById(id);
-  const scenarios = {
-    first: { label: 'First visit', dns: 120, connect: 180, http: 160, assets: 120 },
-    repeat: { label: 'Repeat visit', dns: 1, connect: 180, http: 160, assets: 0 },
-    slow: { label: 'Slow server', dns: 120, connect: 180, http: 1800, assets: 120 },
-    image: { label: 'Missing image', dns: 120, connect: 180, http: 160, assets: 120 },
-    dns: { label: 'DNS failure', dns: 120, connect: 0, http: 0, assets: 0 },
-    cert: { label: 'Invalid certificate', dns: 120, connect: 180, http: 0, assets: 0 }
-  };
-  const responses = {
-    '/plants': { code: 200, reason: 'OK', title: 'Your small garden', body: 'Three small ways to help your plants thrive.' },
-    '/missing': { code: 404, reason: 'Not Found', title: 'Plant not found', body: 'The server answered, but this page does not exist.' },
-    '/broken': { code: 500, reason: 'Internal Server Error', title: 'Something went wrong', body: 'The server could not complete this request.' }
-  };
-  const stageNames = ['Address', 'DNS', 'Connect', 'HTTP', 'Resources', 'Render'];
-  const state = { scenario: 'first', path: '/plants', step: 0, watered: false };
-  const terminalStep = () => state.scenario === 'dns' ? 1 : state.scenario === 'cert' ? 2 : 5;
-  const plantArt = '<svg class="plant-art loaded" viewBox="0 0 320 110" role="img" aria-label="An illustrated growing plant"><path d="M160 77V27" fill="none" stroke="var(--ok)" stroke-width="4"/><path d="M160 57Q112 60 118 26Q153 24 160 57M160 43Q195 45 199 14Q166 13 160 43" fill="var(--surface)" stroke="var(--ok)" stroke-width="3"/><path d="M135 73H185L178 101H142Z" fill="var(--surface)" stroke="var(--border-bright)" stroke-width="2"/></svg>';
-
-  function gardenMarkup({styled, image, missing = false, interactive, watered, buttonId}) {
-    return '<div class="garden' + (styled ? ' styled' : '') + '">' +
-      '<div class="garden-label">Garden notes</div><h3>Your small garden</h3>' +
-      '<p>Three small ways to help your plants thrive.</p>' +
-      (image ? plantArt : missing ? '<div class="image-failed">Image unavailable · /plant.svg returned 404</div>' : '') +
-      '<p class="garden-info">Give it light. Check the soil. Water when needed.</p>' +
-      '<button type="button" id="' + buttonId + '"' + (interactive ? '' : ' disabled') + '>' + (watered ? 'Watered! ✓' : 'Water the plant') + '</button>' +
-      '<p class="small muted" style="margin-top:var(--s-2)">' + (interactive ? 'The script handles this button’s click.' : 'The button’s script is not active.') + '</p></div>';
-  }
-  function stepInfo() {
-    const response = responses[state.path];
-    const cached = state.scenario === 'repeat';
-    const entries = [
-      ['Read the address', 'The browser separates the scheme, hostname, and path. It has not contacted the server yet.', 'scheme: https\nhostname: garden.example\npath: ' + state.path],
-      [cached ? 'Reuse the DNS answer' : 'Find a network address', cached ? 'A usable local DNS answer skips an external lookup in this visit.' : 'The browser asks a recursive resolver. On a cache miss, it can follow referrals to an authoritative answer.', 'garden.example → 192.0.2.10\n' + (cached ? 'Source: local DNS cache' : 'Source: resolver’s answer')],
-      ['Connect and establish TLS', 'This visit opens a new TCP connection, then negotiates TLS and checks the server’s certificate before sending HTTP.', 'TCP: SYN → SYN+ACK → ACK\nTLS: identity checks + session keys\nHTTP/2 connection ready'],
-      ['Request the document', 'The browser requests ' + state.path + '. The server returns ' + response.code + ' ' + response.reason + '. The response body contains HTML.', 'Request: GET ' + state.path + '\nResponse: ' + response.code + ' ' + response.reason + '\nContent-Type: text/html\nBody: HTML document'],
-      [response.code === 200 ? (cached ? 'Reuse cached resources' : 'Discover more resources') : 'No extra resources in this error page', response.code === 200 ? (cached ? 'This model’s stylesheet, image, and script are fresh in the browser cache. The HTML was still requested from the server.' : 'The HTML references a stylesheet, an image, and a script. The browser fetches them, often concurrently.') : 'Our server returns a self-contained error document. A real error page could also request CSS, images, or scripts.', response.code === 200 ? '/style.css  ' + (cached ? 'fresh cache' : '200 OK') + '\n/plant.svg  ' + (state.scenario === 'image' ? '404 Not Found' : cached ? 'fresh cache' : '200 OK') + '\n/app.js     ' + (cached ? 'fresh cache' : '200 OK') : 'No referenced resources\nHTTP error does not mean no HTML'],
-      [response.code === 200 ? 'Render and respond to clicks' : 'Render the error document', response.code === 200 ? 'The browser combines the document and styles into pixels. The script now handles the watering button. Try it in the preview.' : 'The browser can display an error response just like any other HTML document. It is a server answer, not a DNS or TLS failure.', response.code === 200 ? 'HTML → document tree\nCSS → styles and layout → paint\nJavaScript → event handling' : response.code + ' ' + response.reason + '\nError HTML → document tree → pixels']
-    ];
-    if (state.scenario === 'dns' && state.step === 1) return ['The name could not be resolved', 'The browser has no destination address. It cannot establish the connection or send an HTTP request.', 'DNS lookup failed\nNo HTTP status code\nNo server response body'];
-    if (state.scenario === 'cert' && state.step === 2) return ['The certificate check failed', 'TCP connected, but the certificate does not cover garden.example. This model stops instead of sending the HTTP request.', 'TCP: connected\nTLS: hostname mismatch\nHTTP request: not sent'];
-    return entries[state.step];
-  }
-  function renderPreview() {
-    const response = responses[state.path];
-    let title, description;
-    if (state.scenario === 'dns' && state.step >= 1) {
-      title = 'Address not found'; description = 'Browser-generated error. The web server did not answer.';
-    } else if (state.scenario === 'cert' && state.step >= 2) {
-      title = 'Connection stopped'; description = 'Browser-generated warning. The certificate’s hostname does not match.';
-    } else if (state.step < 3) {
-      title = ['An address, not a page', 'Finding the server', 'Preparing a secure connection'][state.step];
-      description = 'No HTML response has arrived yet.';
-    }
-    if (title) {
-      $('browser-preview').replaceChildren();
-      const box = document.createElement('div'); box.className = 'preview-wait';
-      const heading = document.createElement('strong'); heading.textContent = title;
-      const text = document.createElement('span'); text.textContent = description;
-      box.append(heading, text); $('browser-preview').append(box);
-    } else if (response.code !== 200) {
-      $('browser-preview').innerHTML = '<div class="preview-wait"><strong>' + response.code + ' · ' + response.title + '</strong><span>' + response.body + '</span></div>';
-    } else {
-      $('browser-preview').innerHTML = gardenMarkup({styled: state.step >= 4, image: state.step >= 4 && state.scenario !== 'image', missing: state.step >= 4 && state.scenario === 'image', interactive: state.step === 5, watered: state.watered, buttonId: 'journey-water'});
-      $('journey-water').addEventListener('click', event => { state.watered = true; event.currentTarget.textContent = 'Watered! ✓'; });
-    }
-  }
-  function renderTimeline() {
-    const preset = scenarios[state.scenario];
-    const durations = [0, preset.dns, preset.connect, preset.http, responses[state.path].code === 200 ? preset.assets : 0, 35];
-    const end = terminalStep();
-    $('timeline-rows').replaceChildren();
-    let elapsed = 0;
-    stageNames.forEach((name, index) => {
-      const done = index <= state.step && index <= end;
-      const duration = done ? durations[index] : 0;
-      elapsed += duration;
-      const row = document.createElement('div'); row.className = 'time-row' + (done ? '' : ' pending');
-      const label = document.createElement('span'); label.textContent = name;
-      const track = document.createElement('div'); track.className = 'time-track'; track.setAttribute('aria-hidden', 'true');
-      const bar = document.createElement('div'); bar.className = 'time-bar'; bar.style.width = (duration / 1800 * 100) + '%'; track.append(bar);
-      const value = document.createElement('span'); value.textContent = done ? duration + ' ms' : index > end ? 'skipped' : '—';
-      row.append(label, track, value); $('timeline-rows').append(row);
-    });
-    $('time-total').textContent = 'Illustrative elapsed time: ' + elapsed.toLocaleString() + ' ms. ' + (state.scenario === 'repeat' ? 'Cached asset retrieval is rounded to 0 ms.' : 'Not measured performance.');
-  }
-  function updateHTTP() {
-    const response = responses[state.path];
-    $('http-request').textContent = 'GET ' + state.path + '\nHost: garden.example\nAccept: text/html';
-    $('http-response').textContent = 'Status: ' + response.code + ' ' + response.reason + '\nContent-Type: text/html\n\n<h1>' + response.title + '</h1>' + (response.code === 200 ? '\n<link rel="stylesheet" href="/style.css">' : '\n<p>' + response.body + '</p>');
-  }
-  function renderJourney() {
-    state.step = Math.min(state.step, terminalStep());
-    if (state.step < 5) state.watered = false;
-    const [title, description, wire] = stepInfo();
-    $('step-label').textContent = 'Step ' + (state.step + 1) + ' of 6 · ' + stageNames[state.step];
-    $('step-title').textContent = title; $('step-description').textContent = description; $('step-wire').textContent = wire;
-    $('browser-url').textContent = 'https://garden.example' + state.path;
-    $('previous').disabled = state.step === 0; $('next').disabled = state.step === terminalStep();
-    $('next').textContent = state.step === terminalStep() ? (terminalStep() < 5 ? 'Journey stopped' : 'Journey complete') : 'Next step →';
-    document.querySelectorAll('[data-step]').forEach(button => {
-      const step = Number(button.dataset.step);
-      if (step === state.step) button.setAttribute('aria-current', 'step'); else button.removeAttribute('aria-current');
-      button.disabled = step > terminalStep();
-    });
-    ['browser', 'dns', 'server'].forEach(name => $('node-' + name).classList.toggle('active', name === (state.step === 1 ? 'dns' : state.step === 2 || state.step === 3 ? 'server' : 'browser')));
-    $('journey-status').textContent = 'Step ' + (state.step + 1) + ' of 6. ' + scenarios[state.scenario].label + '. ' + title + '.';
-    $('url-path-part').textContent = state.path;
-    renderPreview(); renderTimeline(); updateHTTP();
-  }
-  function resetJourney() { state.step = 0; state.watered = false; renderJourney(); }
-  $('scenario').addEventListener('change', event => { state.scenario = event.target.value; resetJourney(); });
-  $('path').addEventListener('change', event => { state.path = event.target.value; resetJourney(); updateURLPart(); });
-  $('next').addEventListener('click', () => { state.step = Math.min(state.step + 1, terminalStep()); renderJourney(); });
-  $('previous').addEventListener('click', () => { state.step = Math.max(state.step - 1, 0); renderJourney(); });
-  $('replay').addEventListener('click', resetJourney);
-  document.querySelectorAll('[data-step]').forEach(button => button.addEventListener('click', () => { state.step = Number(button.dataset.step); renderJourney(); }));
-
-  let urlPart = 'scheme';
-  function updateURLPart() {
-    const descriptions = {
-      scheme: ['Scheme: HTTPS.', 'Use HTTP over an encrypted connection. The scheme tells the browser how to communicate.'],
-      host: ['Hostname: garden.example.', 'DNS helps resolve this name to an IP address. Changing the path does not change this hostname.'],
-      path: ['Path: ' + state.path + '.', 'This identifies the resource being requested. The server chooses how to handle it; it need not be a file on disk.']
-    };
-    const [title, body] = descriptions[urlPart];
-    $('url-description').replaceChildren();
-    const strong = document.createElement('strong'); strong.textContent = title + ' ';
-    $('url-description').append(strong, document.createTextNode(body));
-    document.querySelectorAll('[data-url-part]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.urlPart === urlPart)));
-  }
-  document.querySelectorAll('[data-url-part]').forEach(button => button.addEventListener('click', () => { urlPart = button.dataset.urlPart; updateURLPart(); }));
-  $('dns-cached').addEventListener('change', event => {
-    const cached = event.target.checked;
-    const items = $('dns-list').children;
-    items[0].querySelector('strong').textContent = cached ? 'Local cache hit' : 'Check nearby caches';
-    items[1].querySelector('strong').textContent = cached ? 'Resolver lookup skipped' : 'Ask a recursive resolver';
-    items[2].querySelector('strong').textContent = cached ? 'Referrals skipped' : 'Follow referrals when needed';
-    items[1].classList.toggle('skipped', cached); items[2].classList.toggle('skipped', cached);
-    $('dns-result').textContent = 'Illustrative answer: garden.example → 192.0.2.10 · ' + (cached ? 'reused locally, no lookup needed' : 'returned by the resolver');
-  });
-  $('encrypted').addEventListener('change', event => {
-    $('observer-output').textContent = event.target.checked ? 'Encrypted HTTP request\nPath, headers, and body are not readable by a passive network observer.' : 'Readable plaintext HTTP request\nGET /plants\nHost: garden.example\n\nA network observer can read—and an active attacker may alter—unprotected traffic.';
-  });
-
-  let layerWatered = false;
-  function renderLayers() {
-    $('layers-preview').innerHTML = gardenMarkup({styled: $('layer-css').checked, image: $('layer-image').checked, interactive: $('layer-js').checked, watered: layerWatered, buttonId: 'layer-water'});
-    $('layer-water').addEventListener('click', event => { layerWatered = true; event.currentTarget.textContent = 'Watered! ✓'; });
-  }
-  ['layer-css', 'layer-image'].forEach(id => $(id).addEventListener('change', renderLayers));
-  $('layer-js').addEventListener('change', () => { layerWatered = false; renderLayers(); });
-
-  const auth = { cookie: false, session: false };
-  function renderAuth(message, wire) {
-    $('cookie-state').textContent = auth.cookie ? 'demo_session=demo-7' : 'No session cookie';
-    $('server-state').textContent = auth.session ? 'demo-7 → demo user · active' : 'No active session';
-    $('expire').disabled = !auth.session;
-    $('sign-out').disabled = !auth.cookie;
-    $('auth-result').textContent = message;
-    $('auth-wire').textContent = wire;
-  }
-  $('sign-in').addEventListener('click', () => {
-    auth.cookie = true; auth.session = true;
-    renderAuth('Signed in. The server issued a session ID; the browser stored its cookie.', 'POST /login\n[Credential checking assumed successful]\n\nResponse: 200 OK\nSet-Cookie: demo_session=demo-7; Path=/; Secure; HttpOnly; SameSite=Lax');
-  });
-  $('account').addEventListener('click', () => {
-    const accepted = auth.cookie && auth.session;
-    renderAuth(accepted ? '200 OK · The server accepts the session and returns your account.' : '401 Unauthorized · No accepted session. Sign in to view this account.', 'GET /account\n' + (auth.cookie ? 'Cookie: demo_session=demo-7' : '[No session cookie sent]') + '\n\nResponse: ' + (accepted ? '200 OK\nAccount for demo user' : '401 Unauthorized\nA valid sign-in is required'));
-  });
-  $('expire').addEventListener('click', () => {
-    auth.session = false;
-    renderAuth('The server session expired. The browser still has its cookie. Try /account again.', 'Server-side event: session demo-7 expires\nNo browser request or Set-Cookie response\nThe stored cookie alone cannot restore the session.');
-  });
-  $('sign-out').addEventListener('click', () => {
-    auth.cookie = false; auth.session = false;
-    renderAuth('Signed out. The server invalidated the session and told the browser to delete the cookie.', 'POST /logout\nCookie: demo_session=demo-7\n\nResponse: 200 OK\nSet-Cookie: demo_session=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax');
-  });
-
-  renderJourney(); renderLayers(); updateURLPart();
-  document.documentElement.classList.add('ready');
-})();
-</script>
+<script src="assets/web-guide.js"></script>
 <script src="assets/guide-layout.js"></script>
 </body>
 </html>
