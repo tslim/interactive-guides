@@ -1,294 +1,246 @@
-/* UI for the local OS teaching models. No real OS operations are performed. */
+/* One editor story. Close-up inspectors are explicitly independent examples;
+   only OSJourneyModel changes the main document, copies, and read counter. */
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
-  if (!window.OSModel) { $('model-error').hidden = false; return; }
-  const model = window.OSModel;
-  const players = [];
-  let activePlayer = null;
+  if (!window.OSModel || !window.OSJourneyModel) { $('model-error').hidden = false; return; }
+  const model = window.OSModel, journeyModel = window.OSJourneyModel;
+  const panels = [...document.querySelectorAll('[data-journey-step]')], links = [...document.querySelectorAll('[data-step]')];
+  const names = ['Launch', 'Open', 'Read', 'Edit', 'Save'];
+  const defaults = () => ({ allowed: true, cached: false, slow: false, pressure: false, renamed: false });
+  let options = defaults(), run, positions = [], stage = 0, timer = null;
+  const nav = document.querySelector('.journey-nav'), dashboard = document.querySelector('.os-dashboard');
+  const frame = () => run.frames[positions[stage]];
+  const indices = index => run.frames.map((f, i) => f.stage === index ? i : -1).filter(i => i >= 0);
+  const lastInStage = () => indices(stage).at(-1);
   function element(tag, text, className) {
     const node = document.createElement(tag);
     if (text !== undefined) node.textContent = text;
     if (className) node.className = className;
     return node;
   }
-  function card(title, detail, active = false) {
-    const node = element('div', undefined, 'card' + (active ? ' active' : ''));
-    node.append(element('strong', title), element('small', detail)); return node;
+  function syncControls() {
+    const finished = run && positions[stage] === lastInStage();
+    $('stage-play').textContent = timer ? 'Pause' : finished ? 'Replay stage' : 'Play stage';
+    $('stage-play').setAttribute('aria-pressed', String(Boolean(timer)));
+    $('stage-event-next').disabled = Boolean(finished);
+    $('stage-event-previous').disabled = !run || positions[stage] === indices(stage)[0];
   }
-  function route(id, labels, index, numbered = true) {
-    $(id).replaceChildren(...labels.map((label, i) => card((numbered ? (i + 1) + ' · ' : '') + label, i === index ? 'Current focus' : 'Not active at this step', i === index)));
-  }
-  function narration(prefix, title, description) {
-    $(prefix + '-heading').textContent = title; $(prefix + '-description').textContent = description;
-  }
-  function player(id, initialFrames, draw, pace = () => 1700) {
-    const root = $(id), bar = element('div', undefined, 'toolbar');
-    const button = (suffix, text) => { const b = element('button', text); b.type = 'button'; b.id = id + '-' + suffix; bar.append(b); return b; };
-    const back = button('back', '← Back'), next = button('next', 'Next step →'), play = button('play', 'Autoplay'), reset = button('reset', 'Restart');
-    const seekControl = element('div', undefined, 'control'), label = element('label', 'Inspect a step'), seek = element('input'), count = element('output');
-    seek.type = 'range'; seek.min = '0'; seek.step = '1'; seek.id = id + '-seek'; label.htmlFor = seek.id; count.setAttribute('for', seek.id);
-    seekControl.append(label, seek, count); root.append(bar, seekControl);
-    let frames = initialFrames, position = 0, timer = null;
-    const api = {
-      pause() { clearInterval(timer); timer = null; if (activePlayer === api) activePlayer = null; controls(); },
-      go(index) { api.pause(); position = Math.max(0, Math.min(frames.length - 1, index)); paint(); },
-      replace(nextFrames) { api.pause(); frames = nextFrames; position = 0; paint(); },
-      redraw() { draw(frames[position], position); },
-      get position() { return position; },
-      get current() { return frames[position]; }
-    };
-    function controls() {
-      back.disabled = position === 0; next.disabled = position === frames.length - 1;
-      play.textContent = timer ? 'Pause' : position === frames.length - 1 ? 'Replay' : 'Autoplay';
-      play.setAttribute('aria-pressed', String(Boolean(timer)));
-      seek.max = String(frames.length - 1); seek.value = String(position);
-      seek.setAttribute('aria-valuetext', 'Step ' + (position + 1) + ' of ' + frames.length);
-      count.textContent = 'Step ' + (position + 1) + ' of ' + frames.length;
-    }
-    function paint() { if (position === frames.length - 1) api.pause(); controls(); draw(frames[position], position); }
-    back.addEventListener('click', () => api.go(position - 1)); next.addEventListener('click', () => api.go(position + 1));
-    reset.addEventListener('click', () => api.go(0)); seek.addEventListener('input', () => api.go(Number(seek.value)));
-    play.addEventListener('click', () => {
-      if (timer) { api.pause(); return; }
-      if (activePlayer) activePlayer.pause();
-      if (position === frames.length - 1) { position = 0; paint(); }
-      activePlayer = api;
-      timer = setInterval(() => { position = Math.min(position + 1, frames.length - 1); paint(); }, pace()); controls();
+  function stop() { clearInterval(timer); timer = null; syncControls(); }
+  function clearCrash() { $('save-result').hidden = true; $('save-result').replaceChildren(); }
+  function rebuild(focusId = null) {
+    stop(); const prior = positions.map(index => run?.frames[index]?.id);
+    run = journeyModel.buildJourney(options);
+    positions = run.checkpoints.map((index, s) => {
+      const preserved = run.frames.findIndex(f => f.id === prior[s] && f.stage === s);
+      return preserved >= 0 ? preserved : index;
     });
-    players.push(api); paint(); return api;
+    stage = Math.min(stage, run.terminalStage);
+    if (focusId) {
+      const index = run.frames.findIndex(f => f.id === focusId && f.stage === stage);
+      if (index >= 0) positions[stage] = index;
+    }
+    clearCrash(); render();
   }
-  document.addEventListener('visibilitychange', () => { if (document.hidden) players.forEach(p => p.pause()); });
-  window.addEventListener('pagehide', () => players.forEach(p => p.pause()));
-  document.addEventListener('guide:change', () => players.forEach(p => p.pause()));
-
-  // 1. Mode transitions are deliberately separate from process scheduling.
-  function kernelFrames(action) {
-    if (action === 'calculate') return [
-      { title: 'The app prepares a calculation.', text: 'The running thread already has a CPU turn. Its instructions execute in user mode.', part: 0 },
-      { title: 'The CPU computes 2 + 2 = 4.', text: 'Ordinary arithmetic needs no system call. The kernel did not interpret this instruction for the application.', part: 1 }
-    ];
-    return [
-      { title: 'Application requests a file.', text: 'A library wrapper prepares an open request. The application is still executing in user mode.', part: 0 },
-      { title: 'Enter through a system call.', text: 'Hardware transfers control to an approved kernel entry point. Kernel code runs with privilege; the application does not gain unrestricted privilege.', part: 1 },
-      { title: 'Validate arguments and access.', text: action === 'denied' ? 'The caller lacks read permission for this file. The kernel refuses this request.' : 'The kernel resolves the path and checks permissions. This caller may open the file.', part: 2 },
-      { title: action === 'denied' ? 'Return an error, not the bytes.' : 'Return a file handle.', text: action === 'denied' ? 'The application resumes in user mode with a permission error. The process can handle the error; denial does not inherently crash it.' : 'The application resumes in user mode with a handle for future operations. Opening the handle is not the same as reading the file contents.', part: 3 }
-    ];
+  function renderScene() {
+    const f = frame();
+    $('journey').dataset.event = f.id;
+    $('process-state').textContent = f.process;
+    $('storage-reads').textContent = String(f.reads);
+    $('edit-durable').textContent = f.durable === null ? 'No new edit' : f.durable ? 'Yes · synced' : 'Not yet';
+    const announcement = names[stage] + ': ' + f.title + '. Process ' + f.process + '; ' + f.reads + ' storage reads; latest edit: ' + $('edit-durable').textContent + '.';
+    if ($('os-event-announcement').textContent !== announcement) $('os-event-announcement').textContent = announcement;
+    $('os-owner').textContent = 'Active: ' + f.owner;
+    $('os-event-title').textContent = f.title;
+    $('os-event-description').textContent = f.text;
+    document.querySelector('.editor').hidden = stage === 0 && f.id !== 'running';
+    $('editor-path').textContent = f.handle === null ? 'No document open' : '/notes/' + f.filename + ' · descriptor ' + f.handle;
+    $('editor-tabs').hidden = f.handle === null;
+    $('editor-filename').textContent = f.filename;
+    $('editor-pending').hidden = f.durable !== false;
+    $('editor-file-state').textContent = f.id === 'denied' ? 'Access denied' : f.app === null ? (f.handle === null ? 'No file' : 'Not read') : f.durable === null ? 'Original' : f.durable ? 'Durable' : f.written ? 'Sync pending' : 'Unsaved';
+    $('editor-file-state').dataset.state = f.durable === true ? 'durable' : f.durable === false ? 'pending' : 'original';
+    $('editor-document').hidden = f.app === null;
+    $('editor-text').hidden = f.app === null;
+    $('editor-text').setAttribute('aria-label', 'Simulated editor document: ' + f.filename);
+    $('editor-wait').hidden = f.app !== null;
+    if (f.app !== null) $('editor-text').value = f.app;
+    const heading = f.id === 'denied' ? 'Access denied.' : f.process === 'Not started' ? 'Editor not running.' : f.handle === null ? 'Editor ready. No document open.' : 'File opened. Bytes not read yet.';
+    const body = f.id === 'denied' ? 'The editor can handle this error. No document bytes were read, edited, or written.' : f.handle === null ? 'Open a note to get a file descriptor.' : 'Descriptor 3 refers to inode 42. The read stage brings its contents into this buffer.';
+    $('editor-wait-message').replaceChildren(element('strong', heading), element('span', body));
+    $('editor-status').textContent = f.app === null ? 'No document buffer yet.' : f.durable === null ? 'Original version loaded. No new edit.' : f.durable ? 'Saved durably in this model.' : f.written ? 'Write returned. Synchronization still pending.' : 'Unsaved edit · only the application buffer changed.';
+    $('memory-status').hidden = stage !== 0 && stage !== 3;
+    $('memory-status').textContent = f.memory;
+    document.querySelector('.copy-board').hidden = stage < 2;
+    $('copy-os').hidden = stage < 2;
+    $('copy-device').hidden = stage !== 4;
+    $('copy-disk').hidden = stage < 2;
+    document.querySelectorAll('[data-copy-filename]').forEach(node => { node.textContent = f.filename; });
+    $('copy-os-value').textContent = f.cache ?? 'Not cached';
+    $('copy-device-value').textContent = f.device;
+    $('copy-disk-value').textContent = f.disk;
+    $('copy-os-note').textContent = f.cache === null ? 'A document read will need storage.' : f.dirty ? 'Dirty: the changed bytes still need writeback.' : f.written && !f.durable ? 'OS page clean; the device flush / sync is still pending.' : 'Clean cached copy. This is not the application buffer.';
+    $('copy-disk-note').textContent = f.durable === true ? 'The new file version is durable after successful synchronization.' : 'Existing durable version; opening or editing does not replace it.';
+    $('copy-os').classList.toggle('dirty', f.dirty);
+    $('copy-disk').classList.toggle('durable', f.durable === true);
+    $('cpu-handoff').hidden = !((stage === 2 && f.id !== 'cache-check') || (stage === 3 && f.process === 'Blocked'));
+    $('handoff-title').textContent = f.process === 'Blocked' ? 'Editor blocked · CPU available to other ready work' : f.process === 'Ready' ? 'Editor ready · waiting for a CPU turn' : 'Editor running · the read can return';
+    $('handoff-description').textContent = f.process === 'Blocked' ? 'The device can work while another ready thread, such as a music player, uses the CPU.' : f.process === 'Ready' ? 'I/O completion is not CPU dispatch. The scheduler still chooses when the editor resumes.' : options.cached ? 'The document cache supplied the bytes without a device request.' : 'After completion and scheduling, the editor receives the document bytes.';
+    const events = indices(stage), eventIndex = events.indexOf(positions[stage]);
+    $('event-position').textContent = names[stage] + ' · event ' + (eventIndex + 1) + ' / ' + events.length;
+    syncControls();
+    document.documentElement.style.setProperty('--os-dashboard-height', dashboard.getBoundingClientRect().height + 'px');
   }
-  const kernel = player('kernel-player', kernelFrames('allowed'), f => {
-    route('kernel-route', $('kernel-action').value === 'calculate' ? ['Application instructions', 'CPU arithmetic · user mode'] : ['Application', 'System-call entry', 'Kernel validation', 'Application resumes'], f.part);
-    narration('kernel', f.title, f.text);
+  function render() {
+    panels.forEach((panel, index) => { panel.hidden = stage !== index; });
+    links.forEach((link, index) => {
+      if (index === stage) link.setAttribute('aria-current', 'step'); else link.removeAttribute('aria-current');
+      link.setAttribute('aria-disabled', String(index > run.terminalStage));
+    });
+    $('journey-position').textContent = (stage + 1) + ' / 5';
+    $('journey-status').textContent = 'Stage ' + (stage + 1) + ' of 5 · ' + names[stage] + '. ' + (frame().id === 'denied' ? 'Open denied. Allow access above to continue.' : 'The same editor and file throughout.');
+    $('previous').disabled = stage === 0; $('next').disabled = stage === run.terminalStage;
+    $('next').textContent = stage === run.terminalStage ? (!options.allowed ? (frame().id === 'denied' ? 'Open denied' : 'Checking access') : frame().durable ? 'Journey complete' : 'Save pending') : 'Next stage →';
+    $('allow-file').checked = options.allowed; $('document-cached').checked = options.cached;
+    $('slow-storage').checked = options.slow; $('slow-storage').disabled = options.cached;
+    $('memory-pressure').checked = options.pressure;
+    $('rename-file').disabled = !options.allowed || frame().handle === null;
+    $('rename-file').textContent = options.renamed ? 'Restore todo.txt name' : 'Rename to shopping.txt';
+    $('rename-note').textContent = frame().filename === 'shopping.txt' ? 'The directory now names shopping.txt. Descriptor 3 still refers to inode 42; the bytes are unchanged.' : options.renamed ? 'The rename is scheduled after the descriptor is returned. Play the open stage to follow it.' : 'After opening, renaming changes the name—not the object referenced by descriptor 3.';
+    $('file-identity').textContent = frame().id === 'denied' ? 'File-open request → permission error\nNo descriptor returned · no document read' : 'Path: /notes/' + frame().filename + '\nDescriptor: ' + (frame().handle ?? 'not returned yet') + ' → inode ' + (frame().inode ?? 'not opened yet');
+    $('read-description').textContent = options.cached ? 'The document is already cached. The kernel supplies its bytes without a device read; the editor can continue without this storage wait.' : 'A cache miss goes through a driver to the device. The editor blocks while I/O runs. Completion makes it ready; a later CPU turn lets the read return.';
+    $('cache-note').textContent = options.cached ? 'Document cache hit: no document I/O. The one cold executable-page read still counts. Slow storage does not affect this cache hit.' : options.slow ? 'The same document read takes more waiting events—not more read requests. Play this stage to follow the handoff.' : 'This changes the document read. The executable still starts with one cold code-page read.';
+    renderScene(); window.GuidePresentation?.refresh();
+  }
+  function writeHash(replace = false) {
+    const hash = '#' + panels[stage].id;
+    if (location.hash !== hash) try { history[replace ? 'replaceState' : 'pushState'](null, '', hash); } catch { location.hash = hash; }
+  }
+  function show(index, { focus = false, scroll = false, hash = true } = {}) {
+    if (index < 0 || index > run.terminalStage) return;
+    stop(); stage = index; clearCrash(); render(); if (hash) writeHash();
+    const link = links[stage], strip = link.parentElement.getBoundingClientRect(), box = link.getBoundingClientRect();
+    if (box.left < strip.left) link.parentElement.scrollLeft -= strip.left - box.left;
+    else if (box.right > strip.right) link.parentElement.scrollLeft += box.right - strip.right;
+    if (focus) panels[stage].querySelector('h2').focus({ preventScroll: true });
+    if (scroll) (focus && matchMedia('(max-width:760px)').matches ? panels[stage] : $('journey')).scrollIntoView({ block: 'start', behavior: 'instant' });
+  }
+  function advance() {
+    positions[stage] = Math.min(lastInStage(), positions[stage] + 1); clearCrash(); render();
+    if (positions[stage] === lastInStage()) stop();
+  }
+  links.forEach((link, index) => {
+    link.addEventListener('click', event => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault(); show(index, { focus: true, scroll: true });
+    });
+    link.addEventListener('keydown', event => {
+      if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault(); const end = run.terminalStage;
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? end : (index + (event.key === 'ArrowRight' ? 1 : end)) % (end + 1);
+      show(next); links[next].focus({ preventScroll: true });
+    });
   });
-  $('kernel-action').addEventListener('change', () => kernel.replace(kernelFrames($('kernel-action').value)));
-
-  // 2. CPU scheduling.
-  const cpu = player('cpu-player', model.schedule().frames, f => {
-    $('cpu-lanes').replaceChildren(...f.cpu.map((id, i) => element('div', 'Core ' + (i + 1) + ': ' + (id ? f.tasks.find(t => t.id === id).label : 'idle'), 'cpu-lane')));
+  $('previous').addEventListener('click', () => show(stage - 1, { focus: true, scroll: true }));
+  $('next').addEventListener('click', () => show(stage + 1, { focus: true, scroll: true }));
+  $('stage-event-previous').addEventListener('click', () => {
+    stop(); positions[stage] = Math.max(indices(stage)[0], positions[stage] - 1);
+    clearCrash(); render();
+  });
+  $('stage-event-next').addEventListener('click', () => { stop(); advance(); });
+  $('stage-play').addEventListener('click', () => {
+    if (timer) { stop(); return; }
+    if (positions[stage] === lastInStage()) { positions[stage] = indices(stage)[0]; clearCrash(); render(); }
+    timer = setInterval(advance, 1400); syncControls();
+    if (matchMedia('(max-width:760px)').matches) document.querySelector('.scene').scrollIntoView({ block: 'start', behavior: 'instant' });
+  });
+  $('replay').addEventListener('click', () => {
+    stop(); options = defaults(); positions = []; stage = 0;
+    rebuild(); show(0, { focus: true, scroll: true });
+  });
+  $('allow-file').addEventListener('change', event => { options.allowed = event.target.checked; rebuild(options.allowed ? (options.renamed ? 'renamed' : 'opened') : 'denied'); writeHash(true); });
+  $('rename-file').addEventListener('click', () => { options.renamed = !options.renamed; rebuild(options.renamed ? 'renamed' : 'opened'); });
+  $('document-cached').addEventListener('change', event => {
+    options.cached = event.target.checked; if (options.cached) options.slow = false;
+    rebuild(options.cached ? 'read-complete' : 'document-read');
+  });
+  $('slow-storage').addEventListener('change', event => { options.slow = event.target.checked; rebuild('document-read'); });
+  $('memory-pressure').addEventListener('change', event => { options.pressure = event.target.checked; rebuild(options.pressure ? 'code-evict' : 'edited'); });
+  for (const [id, failure] of [['save-app-crash', 'app'], ['save-power-loss', 'power']]) $(id).addEventListener('click', () => {
+    stop(); const result = journeyModel.crashJourney(frame(), failure);
+    const box = $('save-result'); box.hidden = false;
+    box.replaceChildren(element('strong', 'What-if: ' + (failure === 'app' ? 'application crash' : 'power loss')), element('p', 'After restart the file reads “' + result.visible + '”. Persistent copy: “' + result.durable + '”. ' + result.explanation), element('p', 'This inspects a possible failure at the selected event; the editor snapshot above is unchanged. Next event continues the original save.'));
+  });
+  // Independent explanatory close-ups, never silently driving the main story.
+  let cpuRun, cpuPosition = 0;
+  function renderCpu() {
+    const f = cpuRun.frames[cpuPosition];
+    $('cpu-lanes').replaceChildren(...f.cpu.map((id, i) => element('div', 'Core ' + (i + 1) + ': ' + (id ? f.tasks.find(task => task.id === id).label : 'idle'))));
     $('cpu-tasks').replaceChildren(...f.tasks.map(task => {
-      const node = card(task.label, task.state + ' · ' + task.cpuDone + '/' + task.totalCpu + ' CPU ticks complete' + (task.state === 'blocked' ? ' · ' + task.waitRemaining + ' I/O ticks left' : ''), task.state === 'running');
-      node.dataset.task = task.id; node.dataset.state = task.state;
-      node.classList.toggle('blocked', task.state === 'blocked'); node.classList.toggle('done', task.state === 'done');
-      const progress = element('progress', undefined, 'task-bar'); progress.max = task.totalCpu; progress.value = task.cpuDone;
-      progress.setAttribute('aria-label', task.label + ' CPU work completed'); node.append(progress); return node;
+      const node = element('div', undefined, 'mini-card ' + (task.state === 'running' ? 'active' : task.state === 'blocked' ? 'blocked' : task.state === 'done' ? 'done' : ''));
+      node.append(element('strong', task.label), element('small', task.state + ' · ' + task.cpuDone + '/' + task.totalCpu + ' CPU ticks')); return node;
     }));
-    narration('cpu', f.tasks.every(t => t.state === 'done') ? 'All nine CPU ticks of work are complete.' : 'Tick ' + f.time + ' → ' + (f.time + 1) + ': who runs now?', f.event);
-  });
-  function rebuildCpu() {
-    const ioTicks = Number($('cpu-io').value);
-    $('cpu-io-value').textContent = ioTicks + ' ticks'; $('cpu-io').setAttribute('aria-valuetext', ioTicks + ' I/O ticks');
-    cpu.replace(model.schedule({ cores: Number($('cpu-cores').value), ioTicks }).frames);
+    $('cpu-description').textContent = 'Tick ' + f.time + ': ' + f.event;
+    $('cpu-next').disabled = cpuPosition === cpuRun.frames.length - 1;
   }
-  $('cpu-cores').addEventListener('change', rebuildCpu); $('cpu-io').addEventListener('input', rebuildCpu); rebuildCpu();
-
-  // 3. Address inspection does not allocate memory or change the table.
+  function rebuildCpu() { stop(); cpuRun = model.schedule({ cores: Number($('cpu-cores').value), ioTicks: 3 }); cpuPosition = 0; renderCpu(); }
+  $('cpu-cores').addEventListener('change', rebuildCpu);
+  $('cpu-next').addEventListener('click', () => { stop(); cpuPosition = Math.min(cpuRun.frames.length - 1, cpuPosition + 1); renderCpu(); });
+  $('cpu-reset').addEventListener('click', () => { stop(); cpuPosition = 0; renderCpu(); });
   function renderMemory() {
     const process = $('memory-process').value, address = Number($('memory-address').value), access = $('memory-access').value;
     const result = model.translate({ process, address, access });
-    $('memory-address-value').textContent = address + ' (0x' + address.toString(16).toUpperCase() + ')';
+    $('memory-address-value').textContent = address + ' · page ' + result.page + ', offset ' + result.offset;
     $('memory-address').setAttribute('aria-valuetext', 'Virtual address ' + address + ', page ' + result.page + ', offset ' + result.offset);
     $('memory-pages').replaceChildren(...model.pageTable(process).map(entry => {
-      const button = element('button', undefined, 'card'); button.type = 'button'; button.dataset.page = entry.page;
-      const destination = entry.kind === 'resident' ? 'Frame ' + entry.frame : ({ zero: 'First use · zero-fill', disk: 'Needs storage read', invalid: 'Unmapped' })[entry.kind];
-      button.append(element('strong', 'Page ' + entry.page), element('small', destination + (entry.kind === 'invalid' ? '' : entry.writable ? ' · read/write' : ' · read-only')));
-      button.setAttribute('aria-pressed', String(entry.page === result.page));
-      button.addEventListener('click', () => { $('memory-address').value = String(entry.page * model.PAGE_BYTES + result.offset); renderMemory(); $('memory-pages').querySelector('[data-page="' + entry.page + '"]').focus({ preventScroll: true }); });
-      return button;
+      const node = element('button', undefined, 'mini-card'); node.type = 'button'; node.dataset.page = entry.page;
+      const destination = entry.kind === 'resident' ? 'Frame ' + entry.frame : ({ zero: 'Zero-fill on first use', disk: 'Needs backing storage', invalid: 'Unmapped' })[entry.kind];
+      node.append(element('strong', 'Page ' + entry.page), element('small', destination + (entry.kind === 'invalid' ? '' : entry.writable ? ' · read/write' : ' · read-only')));
+      node.setAttribute('aria-pressed', String(entry.page === result.page));
+      node.addEventListener('click', () => { stop(); $('memory-address').value = String(entry.page * model.PAGE_BYTES + result.offset); renderMemory(); $('memory-pages').querySelector('[data-page="' + entry.page + '"]').focus({ preventScroll: true }); }); return node;
     }));
-    $('memory-ram').replaceChildren(...Array.from({ length: 8 }, (_, frame) => card('Frame ' + frame, ({ 1: 'Shared read-only page', 3: 'Editor page 0', 5: 'Player page 0' })[frame] || 'Other use / not shown', result.frame === frame && result.kind === 'resident')));
-    narration('memory', result.kind === 'resident' ? 'Virtual ' + address + ' → physical ' + result.physical : ({ zero: 'Fault: allocate a zero-filled page.', disk: 'Fault: load the modeled backing page.', invalid: 'Fault: this address is not mapped.', protection: 'Fault: this write is not permitted.' })[result.kind], result.explanation);
+    $('memory-description').textContent = (result.kind === 'resident' ? 'Virtual ' + address + ' → physical ' + result.physical + '. ' : '') + result.explanation;
   }
-  ['memory-process', 'memory-access'].forEach(id => $(id).addEventListener('change', renderMemory));
-  $('memory-address').addEventListener('input', renderMemory); renderMemory();
-
-  // 4. Clean-page cache pressure.
-  const trace = model.memoryRun().trace;
-  const pressure = player('pressure-player', model.memoryRun().frames, (f, index) => {
-    $('pressure-ram').replaceChildren(...f.ram.map((page, i) => card('Frame ' + i, page || 'empty', page !== null && page === f.page)));
-    $('pressure-reads').textContent = f.reads; $('pressure-hits').textContent = f.hits; $('pressure-faults').textContent = f.faults;
-    document.querySelectorAll('[data-reference]').forEach(button => {
-      if (Number(button.dataset.reference) === index) button.setAttribute('aria-current', 'step'); else button.removeAttribute('aria-current');
-    });
-    const insight = index === trace.length && f.ram.length >= 4 ? ' Four and five frames both need only the five initial page reads in this trace. The fifth frame avoids an eviction, but not an additional storage read.' : '';
-    narration('pressure', index === 0 ? 'The working set starts cold.' : f.hit ? 'Page ' + f.page + ' is still in RAM.' : 'Page ' + f.page + ' needs a storage read.', f.event + insight);
-  });
-  trace.forEach((page, i) => {
-    const button = element('button', (i + 1) + ' · ' + page); button.type = 'button'; button.dataset.reference = i + 1;
-    button.setAttribute('aria-label', 'Inspect reference ' + (i + 1) + ', page ' + page);
-    button.addEventListener('click', () => pressure.go(i + 1)); $('pressure-trace').append(button);
-  });
-  $('pressure-capacity').addEventListener('change', () => pressure.replace(model.memoryRun(Number($('pressure-capacity').value)).frames));
-
-  // 5. A deliberately tiny, Unix-like name-to-object explorer.
-  const files = [
-    { inode: 42, name: 'todo.txt', blocks: [2, 7], chunks: ['Buy ', 'milk'] },
-    { inode: 81, name: 'ideas.txt', blocks: [4, 5, 8], chunks: ['Plan', 't oa', 'k'] }
-  ];
-  let handle = null;
-  function currentFile() { return files.find(file => file.inode === Number($('file-choice').value)); }
-  function renderHandle() {
-    $('file-open').textContent = handle === null ? 'Open a handle' : 'Close handle 3';
-    $('file-handle').textContent = handle === null ? 'No open handle in this example.' : 'Open descriptor 3 → inode ' + handle + '. It still refers to this object even if the name changes.';
-  }
-  const filePlayer = player('file-player', [0, 1, 2, 3], step => {
-    const file = currentFile(), path = '/notes/' + file.name;
-    route('file-route', [path, '/ → notes directory → ' + file.name, 'Inode ' + file.inode + ' · ' + file.chunks.join('').length + ' bytes', 'Blocks ' + file.blocks.join(', ') + ' → “' + file.chunks.join('') + '”'], step);
-    const captions = [
-      ['Start with a pathname.', 'The root directory resolves “notes” to a directory. That directory will resolve the final filename.'],
-      ['Resolve a directory entry.', 'Inside /notes, “' + file.name + '” names inode ' + file.inode + '. The name is in this directory entry, not embedded in the file’s data.'],
-      ['Inspect file metadata.', 'Inode ' + file.inode + ' describes this regular file, its size, access attributes, and allocation. Our tiny file uses blocks ' + file.blocks.join(', ') + '.'],
-      ['Read logical bytes in order.', 'The blocks hold “' + file.chunks.join('” + “') + '”. Their physical positions need not be consecutive. The application sees “' + file.chunks.join('') + '”.']
-    ];
-    narration('file', ...captions[step]); renderHandle();
-  });
-  $('file-choice').addEventListener('change', () => { $('file-rename-result').textContent = ''; filePlayer.go(0); });
-  $('file-open').addEventListener('click', () => { filePlayer.pause(); handle = handle === null ? currentFile().inode : null; renderHandle(); });
-  $('file-rename').addEventListener('click', () => {
-    filePlayer.pause(); const name = $('file-name').value.trim(), file = currentFile();
-    if (!/^[\w .-]{1,24}$/.test(name) || name === '.' || name === '..') { $('file-rename-result').textContent = 'Use 1–24 letters, digits, spaces, dots, hyphens, or underscores; not “.” or “..”.'; return; }
-    if (files.some(other => other !== file && other.name === name)) { $('file-rename-result').textContent = 'That name already exists in /notes. Choose another name.'; return; }
-    const previous = file.name; file.name = name;
-    $('file-choice').querySelector('[value="' + file.inode + '"]').textContent = '/notes/' + name;
-    filePlayer.redraw(); $('file-rename-result').textContent = 'Renamed ' + previous + ' → ' + name + '. Inode ' + file.inode + ' and blocks ' + file.blocks.join(', ') + ' are unchanged. This shows identity, not crash-durability of the rename.';
-  });
-
-  // 6. One blocking I/O path, contrasted with a cache hit.
-  function ioFrames(hit) {
-    const start = [
-      { at: 0, title: 'The app calls read.', text: 'Its thread enters the kernel using an existing file handle.' },
-      { at: 1, title: 'Check the page cache.', text: hit ? 'The requested bytes are resident. The kernel can copy them without issuing a device read.' : 'The requested bytes are absent. The kernel needs storage I/O.' }
-    ];
-    if (!hit) start.push(
-      { at: 2, title: 'The driver submits a request.', text: 'The request enters the device’s queue. This blocking reader sleeps; it is not a runnable task spinning on a CPU.' },
-      { at: 3, title: 'Storage works while another task runs.', text: 'Device work and CPU work can overlap. The editor remains blocked, but an unrelated ready thread can run.' },
-      { at: 2, title: 'Completion arrives via an interrupt.', text: 'The device has finished its transfer. Driver/OS handling records completion and makes the editor ready—not automatically running.' },
-      { at: 1, title: 'The scheduler gives the editor a turn.', text: 'Once selected, the editor continues its read. I/O readiness and CPU dispatch are distinct events.' }
-    );
-    start.push({ at: 0, title: 'The read returns bytes.', text: hit ? 'The application resumes in user mode. No storage-device request was needed for this cache hit.' : 'The application resumes in user mode with the bytes. Other work could proceed during its I/O wait.' });
-    return start;
-  }
-  const io = player('io-player', ioFrames(false), f => {
-    const labels = $('io-path').value === 'hit' ? ['Application', 'Kernel / cache · device bypassed'] : ['Application', 'Kernel / cache / scheduler', 'Driver / completion', 'Storage device'];
-    route('io-route', labels, f.at, false); narration('io', f.title, f.text);
-  });
-  $('io-path').addEventListener('change', () => io.replace(ioFrames($('io-path').value === 'hit')));
-
-  // 7. Volatile layers and durable storage are intentionally separate.
-  const save = player('save-player', model.saveRun(), (f, index) => {
-    const names = ['Application buffer', 'OS page cache · volatile', 'Device cache · volatile', 'Persistent storage'];
-    $('save-layers').replaceChildren(...['app', 'cache', 'device', 'disk'].map((key, i) => {
-      const node = card(names[i], f[key] === null ? 'Application closed' : f[key], [0,0,1,2,3,3][index] === i);
-      node.dataset.layer = key; return node;
+  ['memory-process', 'memory-access'].forEach(id => $(id).addEventListener('change', () => { stop(); renderMemory(); }));
+  $('memory-address').addEventListener('input', () => { stop(); renderMemory(); });
+  let pressureRun, pressurePosition = 0;
+  function renderPressure() {
+    const f = pressureRun.frames[pressurePosition];
+    $('pressure-ram').replaceChildren(...f.ram.map((page, i) => {
+      const node = element('div', undefined, 'mini-card' + (page !== null && page === f.page ? ' active' : ''));
+      node.append(element('strong', 'Frame ' + i), element('small', page ?? 'empty')); return node;
     }));
-    narration('save', f.title, f.explanation); $('save-result').hidden = true;
+    $('pressure-stats').textContent = f.reads + ' storage reads · ' + f.hits + ' resident hits · reference ' + pressurePosition + '/' + pressureRun.trace.length;
+    $('pressure-description').textContent = f.event;
+    $('pressure-next').disabled = pressurePosition === pressureRun.frames.length - 1;
+  }
+  function rebuildPressure() { stop(); pressureRun = model.memoryRun(Number($('pressure-capacity').value)); pressurePosition = 0; renderPressure(); }
+  $('pressure-capacity').addEventListener('change', rebuildPressure);
+  $('pressure-next').addEventListener('click', () => { stop(); pressurePosition = Math.min(pressureRun.frames.length - 1, pressurePosition + 1); renderPressure(); });
+  $('pressure-reset').addEventListener('click', () => { stop(); pressurePosition = 0; renderPressure(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+  window.addEventListener('pagehide', stop);
+  window.addEventListener('beforeprint', () => {
+    stop(); const previousStage = stage, previousPosition = positions[run.terminalStage];
+    stage = run.terminalStage; positions[stage] = indices(stage).at(-1); renderScene();
+    stage = previousStage; positions[run.terminalStage] = previousPosition;
   });
-  function showSaveCrash(failure) {
-    save.pause(); const result = model.crashSave(save.position, failure);
-    $('save-result').hidden = false;
-    $('save-result').textContent = (failure === 'app' ? 'App crash' : 'Power loss') + ' → after restart, the file reads “' + result.visible + '”. Persistent copy: “' + result.durable + '”. ' + result.explanation + ' Move to another step to continue inspecting the original save sequence.';
+  window.addEventListener('afterprint', renderScene);
+  function followHash(initial = false) {
+    let id; try { id = decodeURIComponent(location.hash.slice(1)); } catch { id = ''; }
+    if (id === 'machines' || id.startsWith('vm-')) { location.replace('how-virtual-machines-work.html#machines'); return; }
+    const aliases = { 'kernel-title': 'kernel', 'processes-title': 'processes', 'memory-title': 'memory', 'memory-heading': 'memory', 'pressure-title': 'pressure', 'files-title': 'files', 'drivers-title': 'drivers', 'journey-title': 'launch' };
+    const target = document.getElementById(aliases[id] || id), panel = target?.closest('[data-journey-step]');
+    const index = !id || id === 'journey' ? 0 : panel ? panels.indexOf(panel) : -1;
+    if (index < 0) { if (initial) show(0, { hash: false }); return; }
+    show(Math.min(index, run.terminalStage), { hash: false });
+    if (target && panel && !panel.hidden) for (let parent = target; parent && parent !== panel; parent = parent.parentElement) if (parent.tagName === 'DETAILS') parent.open = true;
+    if (!initial) $('journey').scrollIntoView({ block: 'start', behavior: 'instant' });
   }
-  $('save-app-crash').addEventListener('click', () => showSaveCrash('app')); $('save-power-loss').addEventListener('click', () => showSaveCrash('power'));
-
-  // 8. Layer diagrams are conceptual, not a universal hypervisor topology.
-  let environment = 'native';
-  function vmFrames(kind) {
-    if (kind === 'vm') return [
-      ['Guest application', 'The guest application makes a system call to its guest kernel—not directly to the host’s filesystem.'],
-      ['Guest kernel', 'The guest OS checks permissions and interprets its own filesystem and virtual disk.'],
-      ['Virtual device', 'A virtual disk request crosses into the virtualization machinery. This is the modeled virtual-device path, not passthrough.'],
-      ['Hypervisor / hosting support', 'Virtualization and device-model support arrange the underlying host-side I/O. Hardware-assisted guest CPU execution need not emulate every instruction.'],
-      ['Host driver', 'A host-side driver handles the eventual physical device request in this example.'],
-      ['Physical hardware', 'Guest work ultimately uses real CPU time, RAM, and devices, shared with other workloads.']
-    ];
-    return kind === 'container' ? [
-      ['Container process', 'This is still a process executing on the host machine. Its views and resource access are isolated by OS mechanisms.'],
-      ['Shared hosting kernel', 'System calls enter the same hosting kernel used by other ordinary containers. There is no separate guest kernel here.'],
-      ['Host driver', 'The kernel and its drivers service permitted device requests.'],
-      ['Physical hardware', 'Resource controls limit use; the container does not create another physical machine.']
-    ] : [
-      ['Application process', 'The application uses its process address space and requests OS services through system calls.'],
-      ['Host kernel', 'The host OS validates the request and manages its filesystem and resources.'],
-      ['Host driver', 'A driver submits the needed device work.'],
-      ['Physical hardware', 'The device performs the work. Cache hits could avoid this device path.']
-    ];
-  }
-  const vm = player('vm-player', vmFrames(environment), (f, index) => {
-    route('vm-route', vmFrames(environment).map(item => item[0]), index); narration('vm', f[0], f[1]); $('vm-result').hidden = true;
-    document.querySelectorAll('[data-environment]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.environment === environment)));
-    document.querySelectorAll('[data-stack]').forEach(node => node.classList.toggle('active', node.dataset.stack === environment));
-  });
-  document.querySelectorAll('[data-environment]').forEach(button => button.addEventListener('click', () => { environment = button.dataset.environment; vm.replace(vmFrames(environment)); }));
-  function crashEnvironment(kernelCrash) {
-    vm.pause(); $('vm-result').hidden = false;
-    $('vm-result').textContent = !kernelCrash ? 'Simulated application crash: this process stops. Its kernel and other isolated processes can continue; shared services or application dependencies can still be affected.' : environment === 'vm' ? 'Simulated guest-kernel crash: this guest and its applications stop. The host and other guests can continue under the intended isolation boundary. This is not a hypervisor crash.' : 'Simulated hosting-kernel crash: the host stops normal operation, affecting native processes and ordinary containers sharing this kernel. Container isolation does not supply a separate kernel.';
-  }
-  $('vm-app-crash').addEventListener('click', () => crashEnvironment(false)); $('vm-kernel-crash').addEventListener('click', () => crashEnvironment(true));
-
-  // 9. A discrete narrative, not a real-time performance model. State patches
-  // make the copies and I/O counts explicit, with independent snapshots.
-  function journeyFrames(scenario) {
-    const frames = [];
-    let state = { process: 'Not started', memory: 'No address space yet', app: 'Not opened', cache: 'Not cached', disk: model.OLD_TEXT, reads: 0, written: false, durable: 'No new edit', dirty: false };
-    function add(id, title, text, owner, highlight, patch = {}) {
-      state = { ...state, ...patch }; frames.push({ ...state, id, title, text, owner, highlight });
-    }
-    add('launch', 'Launch the editor.', 'The launcher asks the OS to start a process. It does not hand the application unrestricted access to the machine.', 'Launcher · user mode', 'process');
-    add('process', 'Create a process and its mappings.', 'The kernel prepares resources and a virtual address space. Mapping executable pages does not mean every page is already resident.', 'Kernel', 'process', { process: 'Ready', memory: 'Virtual mappings created; code page not resident' });
-    add('code', 'First instruction: resolve a code-page fault.', 'In this cold-start story, the needed executable page must be read from storage. This is a storage-backed fault, not the only kind of page fault.', 'Kernel / storage', 'process', { process: 'Blocked for code I/O', memory: 'Code-page read requested', reads: 1 });
-    add('running', 'The editor gets a CPU turn.', 'Its code page is resident. Ordinary instructions execute directly on the CPU; address translation uses the OS-managed mappings.', 'Application · user mode', 'process', { process: 'Running', memory: 'Code resident; private virtual address space' });
-    if (scenario === 'denied') {
-      add('denied', 'The file-open request is denied.', 'The kernel checks this caller’s permissions and returns an error. The editor can handle it; no file bytes are read, edited, or written. The code read earlier was for the executable, not this document.', 'Kernel → application', 'disk', { process: 'Running · handling permission error' });
-      return frames;
-    }
-    add('open', 'Open the existing notes file.', 'The kernel resolves /notes/todo.txt and approves access. It returns a descriptor for the object. The document bytes are not loaded just by this step.', 'Kernel / filesystem', 'cache');
-    add('read', 'Request the document bytes.', 'The document is not cached. The kernel submits a storage request through the driver; this blocking reader sleeps while other tasks can run.', 'Kernel / driver / device', 'cache', { process: 'Blocked for document I/O', reads: 2 });
-    if (scenario === 'slow') {
-      add('wait1', 'The device is still working.', 'No extra CPU calculation can make these requested bytes available yet. Another ready task can use the CPU.', 'Storage device', 'process');
-      add('wait2', 'Still waiting—not repeatedly reading.', 'This is the same outstanding read. The storage-read count stays at two: one code read and one document read. These beats illustrate delay, not measured milliseconds.', 'Storage device', 'process');
-    }
-    add('loaded', 'The read completes; the editor resumes.', 'Completion makes the editor ready. After a scheduler turn, it receives “Buy milk”. The OS also has a clean cached copy.', 'Driver → scheduler → application', 'app', { process: 'Running', app: model.OLD_TEXT, cache: model.OLD_TEXT });
-    if (scenario === 'pressure') {
-      add('evict', 'Memory pressure reclaims a clean code page.', 'Other memory demand competes for the small RAM budget. The OS reclaims a clean executable page that can be read again later. The document’s contents are unchanged.', 'Kernel / memory manager', 'process', { memory: 'Needed code page reclaimed; other code can still run' });
-      add('reload', 'Touch the reclaimed code page again.', 'Execution reaches that nonresident code page. Another fault requests a reload. This extra read is caused by memory pressure—not by changing the notes file.', 'Kernel / storage', 'process', { process: 'Blocked for code reload', memory: 'Code-page reload in progress', reads: 3 });
-      add('resume', 'Resume after the extra read.', 'The page is resident and the editor has a CPU turn again. Less RAM added storage work to the same task.', 'Scheduler → application', 'process', { process: 'Running', memory: 'Code resident again' });
-    }
-    add('edit', 'Add “+ bread” in application memory.', 'Typing changes the editor’s own document buffer. The cached and persistent file still contain the previous version.', 'Application · user mode', 'app', { app: model.NEW_TEXT, durable: 'Not yet' });
-    add('write', 'The buffered write returns.', 'The application writes the existing file. The kernel copies the changed bytes into its page cache and marks them dirty. Other reads can see the new bytes before they are durable.', 'Kernel / page cache', 'cache', { cache: model.NEW_TEXT, dirty: true, written: true });
-    add('writeback', 'Writeback reaches the device cache.', 'Completed writeback can leave the OS page clean while the device still holds volatile data. In this model, reaching the device cache is not yet the durability milestone.', 'Driver / storage device', 'cache', { dirty: false });
-    add('sync', 'Synchronization succeeds.', 'Required writes and cache flushes finish. With the modeled stack honoring its contract, the existing file’s new data is durable. This is not a guarantee against arbitrary hardware failure.', 'Kernel / storage', 'disk', { disk: model.NEW_TEXT, dirty: false, durable: 'Yes · sync completed' });
-    add('close', 'Close the file and exit.', 'The OS releases this process’s resources. File-cache pages may remain useful to other work. Closing was not what made the edit durable; synchronization already did that.', 'Application → kernel', 'process', { process: 'Exited', app: 'Application closed', memory: 'Private mappings released; file cache may remain' });
-    return frames;
-  }
-  const journey = player('journey-player', journeyFrames('normal'), f => {
-    narration('journey', f.title, f.text); $('journey-owner').textContent = 'Active component: ' + f.owner;
-    $('journey-process-value').textContent = f.process; $('journey-memory').textContent = f.memory;
-    $('journey-app-value').textContent = f.app; $('journey-cache-value').textContent = f.cache; $('journey-disk-value').textContent = f.disk;
-    $('journey-cache-note').textContent = f.dirty ? 'Dirty: updated bytes await writeback.' : f.cache === 'Not cached' ? 'Document is not cached in this story.' : f.written && f.disk !== model.NEW_TEXT ? 'Clean OS page; device flush / synchronization still pending.' : 'Clean cached copy; memory use can outlive the process.';
-    $('journey-disk-note').textContent = f.disk === model.NEW_TEXT ? 'New version durable in this model' : 'Previous durable version';
-    $('journey-reads').textContent = f.reads; $('journey-write').textContent = f.written ? 'Yes' : 'Not yet'; $('journey-durable').textContent = f.durable;
-    ['process', 'app', 'cache', 'disk'].forEach(id => $('journey-' + id).classList.toggle('active', f.highlight === id));
-    $('journey-board').dataset.stage = f.id;
-  }, () => Number($('journey-speed').value));
-  $('journey-scenario').addEventListener('change', () => journey.replace(journeyFrames($('journey-scenario').value)));
-  $('journey-speed').addEventListener('change', () => journey.pause());
-  document.documentElement.classList.add('ready');
+  window.addEventListener('hashchange', () => followHash()); window.addEventListener('popstate', () => followHash());
+  new ResizeObserver(() => document.documentElement.style.setProperty('--os-nav-height', nav.getBoundingClientRect().height + 'px')).observe(nav);
+  new ResizeObserver(() => document.documentElement.style.setProperty('--os-dashboard-height', dashboard.getBoundingClientRect().height + 'px')).observe(dashboard);
+  run = journeyModel.buildJourney(options); positions = run.checkpoints.slice();
+  rebuildCpu(); renderMemory(); rebuildPressure();
+  document.documentElement.classList.add('ready'); followHash(true);
 })();

@@ -4,270 +4,194 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="Explore kernels, processes, memory, filesystems, drivers, and virtual machines through local interactive simulations.">
+  <meta name="description" content="Follow one editor through launch, opening a file, reading, editing in memory, and a durable save. Experiment with permissions, caching, memory pressure, and crashes.">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <title>How an operating system runs your programs — Interactive Guides</title>
   <style>
-    html { scroll-behavior: smooth; }
-    main { max-width: 64rem; margin: auto; padding: var(--s-8) var(--s-5); }
+    * { min-width: 0; }
+    main { max-width: 64rem; margin: auto; padding: var(--s-5) var(--s-5) var(--s-6); }
     h1, h2, h3, p, figure { margin: 0; }
-    h1 { margin-block: var(--s-4) var(--s-5); }
-    h2 { margin-block: var(--s-3) var(--s-4); }
-    h3 { font-size: var(--t-lead); margin-bottom: var(--s-3); }
+    main h1 { margin: var(--s-2) 0 var(--s-3); font-size: clamp(1.875rem,3.7vw,2.75rem); }
+    .inspector h2 { margin: var(--s-2) 0 var(--s-3); font-size: 1.4rem; }
+    h3 { margin-bottom: var(--s-2); font-size: 1rem; }
     p + p { margin-top: var(--s-3); }
-    p { max-width: 75ch; }
-    .eyebrow, .label { font: var(--t-label)/1.5 var(--mono); color: var(--text-dim); letter-spacing: .08em; text-transform: uppercase; }
-    .lead { font-size: var(--t-lead); color: var(--text-dim); max-width: 55ch; }
+    p, li { max-width: 70ch; }
+    code { font-size: var(--t-small); overflow-wrap: anywhere; }
+    .eyebrow, .label { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+    .lead { color: var(--text-dim); font-size: 1.1rem; }
     .small, figcaption { font-size: var(--t-small); }
     .muted, figcaption { color: var(--text-dim); }
-    .section-nav { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); margin-top: var(--s-6); font-size: var(--t-small); }
-    section { padding-top: var(--s-8); scroll-margin-top: var(--s-5); }
-    section > .eyebrow { border-top: 1px solid var(--border); padding-top: var(--s-5); }
-    section > p { margin-bottom: var(--s-5); }
-    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); padding: var(--s-5); }
-    .panel + .panel { margin-top: var(--s-5); }
-    .toolbar { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
-    .toolbar > *, .two > *, .three > *, .four > *, .metrics > * { min-width: 0; }
-    .toolbar select { max-width: 100%; }
-    .two, .three, .four, .metrics { display: grid; gap: var(--s-4); }
-    .two { grid-template-columns: repeat(2,minmax(0,1fr)); }
-    .three, .metrics { grid-template-columns: repeat(3,minmax(0,1fr)); }
-    .four { grid-template-columns: repeat(4,minmax(0,1fr)); }
-    .control { display: grid; gap: var(--s-2); font-size: var(--t-small); }
-    .control input[type="range"] { width: 100%; min-width: 0; }
-    .text-input { width: 100%; min-width: 0; padding: var(--s-3); background: var(--bg); color: var(--text); border: 1px solid var(--border-bright); border-radius: var(--r-1); }
-    .space { margin-top: var(--s-5); }
-    .card { padding: var(--s-4); border: 1px solid var(--border-bright); border-radius: var(--r-1); overflow-wrap: anywhere; }
-    .card strong, .card small { display: block; }
-    .card small { color: var(--text-dim); margin-top: var(--s-2); }
-    .card.active, button[aria-pressed="true"], button[aria-current="step"] { border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
-    .card.blocked { border-style: dashed; border-color: var(--warn); }
-    .card.done { border-color: var(--ok); }
-    .card.failed { border-color: var(--risk); }
-    .route { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
-    .route .card { flex: 1 1 8rem; }
-    .route .card .label { margin-bottom: var(--s-2); }
-    .playback { margin-top: var(--s-4); border-top: 1px solid var(--border); padding-top: var(--s-4); }
-    .playback .control { margin-top: var(--s-3); }
-    .playback output { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); }
-    .narration { margin-top: var(--s-5); padding-left: var(--s-4); border-left: 3px solid var(--accent); min-height: 7rem; }
-    .narration p { color: var(--text-dim); }
-    .metric { border-top: 1px solid var(--border); padding-top: var(--s-3); }
-    .metric strong { display: block; font-size: var(--t-lead); overflow-wrap: anywhere; }
-    .metric span { display: block; color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-1); }
-    .note { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-5); }
-    figcaption { border-top: 1px solid var(--border); padding-top: var(--s-3); margin-top: var(--s-5); }
-    .takeaway { border-left: 3px solid var(--accent); padding-left: var(--s-4); margin-top: var(--s-5); font-weight: 600; }
-    details { margin-top: var(--s-5); border-top: 1px solid var(--border); padding-top: var(--s-4); }
-    summary { cursor: pointer; font-weight: 600; }
-    details p { color: var(--text-dim); margin-top: var(--s-3); }
-    .ram { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: var(--s-2); }
-    .ram .card { padding: var(--s-3); }
-    .cpu-lanes { display: grid; gap: var(--s-2); }
-    .cpu-lane { padding: var(--s-3); border: 1px solid var(--accent); font: var(--t-small)/1.6 var(--mono); }
-    .task-bar { width: 100%; height: .65rem; accent-color: var(--accent); margin-top: var(--s-3); }
-    .stage-data { font-family: var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; margin-top: var(--s-3); }
-    .result { margin-top: var(--s-4); border: 1px solid var(--warn); padding: var(--s-4); }
-    .stack { list-style: none; padding: 0; margin: 0; }
-    .stack li { border: 1px solid var(--border); padding: var(--s-2); margin-top: var(--s-2); font-size: var(--t-small); }
-    #journey-player { position: sticky; top: 0; z-index: 2; background: var(--surface); padding-bottom: var(--s-3); }
-    .journey-board { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: var(--s-4); margin-top: var(--s-5); }
-    .journey-board .card { min-height: 7rem; }
-    .sources { padding-left: var(--s-5); font-size: var(--t-small); }
-    .sources li + li { margin-top: var(--s-2); }
-    footer { margin-top: var(--s-8); border-top: 1px solid var(--border); padding-top: var(--s-5); }
-    .js-only { display: none !important; }
-    .ready .js-only { display: flex !important; }
-    .ready .js-grid { display: grid !important; }
-    .ready .js-block { display: block !important; }
-    .skip-link { position: absolute; left: var(--s-4); top: -6rem; padding: var(--s-3); background: var(--surface); z-index: 10; }
-    .skip-link:focus { top: var(--s-4); }
-    @media (max-width:700px) {
-      main { padding: var(--s-6) var(--s-4); }
-      .panel { padding: var(--s-4); }
-      .two, .three { grid-template-columns: minmax(0,1fr); }
-      .four, .ram, .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
-      .journey-board .card { min-height: 0; padding: var(--s-3); }
-      .journey-board .card small { font-size: var(--t-label); }
-      .journey-board .label { letter-spacing: .02em; }
-      .narration { min-height: 0; }
-      .toolbar select { width: 100%; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+    .primary { color: var(--surface); background: var(--accent); border-color: var(--accent); }
+    @media (prefers-color-scheme: dark) { .primary { color: var(--bg); } }
+    details { border-top: 1px solid var(--border); margin-top: var(--s-4); padding-top: var(--s-3); font-size: var(--t-small); }
+    summary { cursor: pointer; font-weight: 600; padding-block: var(--s-1); }
+    details p { margin-top: var(--s-3); color: var(--text-dim); }
+    .experiment { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-4); }
+    .experiment > .label { display: block; margin-bottom: var(--s-2); }
+    .check { display: flex; align-items: center; gap: var(--s-2); margin-top: var(--s-3); font-size: var(--t-small); }
+    input[type="checkbox"] { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
+    .control { display: grid; gap: var(--s-2); margin-top: var(--s-3); font-size: var(--t-small); }
+    .control input[type="range"] { width: 100%; }
+    .takeaway { margin-top: var(--s-4); font-weight: 600; font-size: var(--t-small); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+    .js-only { display: none; }
+    .ready .js-only { display: block; }
+    .ready .toolbar.js-only { display: flex; }
+    .skip-link { position: absolute; top: -5rem; left: var(--s-4); z-index: 30; padding: var(--s-3); background: var(--surface); }
+    .skip-link:focus { top: var(--s-3); }
+    .journey-nav { display: none; position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .ready .journey-nav { display: block; }
+    .journey-nav-inner { max-width: 64rem; margin: auto; padding: var(--s-3) var(--s-5) var(--s-2); }
+    .journey-heading { display: flex; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-2); color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); }
+    .step-links { display: grid; grid-template-columns: repeat(5,minmax(6rem,1fr)); gap: var(--s-2); overflow-x: auto; padding: 3px 3px var(--s-2); margin: -3px; scrollbar-width: thin; }
+    .step-links a { padding: var(--s-2); border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); color: var(--text); text-decoration: none; font: var(--t-small)/1.4 var(--mono); }
+    .step-links a[aria-current="step"] { border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
+    .step-links a[aria-disabled="true"] { color: var(--text-dim); border-style: dashed; }
+    #journey { margin-top: var(--s-4); scroll-margin-top: calc(var(--os-nav-height,7rem) + 1rem); }
+    .os-dashboard { position: sticky; top: var(--os-nav-height,7rem); z-index: 15; padding: var(--s-3); margin-bottom: var(--s-3); border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); }
+    .metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--s-3); }
+    .metric strong { display: block; font-size: clamp(.95rem,2vw,1.35rem); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .metric span { color: var(--text-dim); font-size: var(--t-label); }
+    #stage-controls { margin-top: var(--s-3); }
+    #event-position { font-size: var(--t-label); color: var(--text-dim); }
+    .workspace { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.05fr); border: 1px solid var(--border); border-radius: var(--r-2); background: var(--surface); }
+    .scene { position: sticky; align-self: start; top: calc(var(--os-nav-height,7rem) + var(--os-dashboard-height,8rem) + 1rem); scroll-margin-top: calc(var(--os-nav-height,7rem) + var(--os-dashboard-height,8rem) + 1rem); padding: var(--s-4); }
+    .event-caption { margin-bottom: var(--s-4); }
+    #os-event-title { margin-top: var(--s-2); }
+    #os-event-description { color: var(--text-dim); font-size: var(--t-small); }
+    .ui-icon { width: 1.15rem; height: 1.15rem; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .editor { border: 1px solid var(--border-bright); border-radius: var(--r-2); overflow: hidden; box-shadow: 0 3px 10px var(--lift); }
+    .editor-titlebar { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--border); background: var(--bg); font-size: var(--t-small); }
+    .editor-titlebar > .ui-icon { color: var(--accent); }
+    .window-controls { display: flex; gap: var(--s-3); margin-left: auto; color: var(--text-dim); font: var(--t-small)/1 var(--mono); }
+    .editor-tabs { display: flex; gap: var(--s-2); align-items: center; padding: var(--s-2) var(--s-3) 0; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .editor-tab { display: flex; gap: var(--s-2); align-items: center; padding: var(--s-2) var(--s-3); margin-bottom: -1px; border: 1px solid var(--border); border-bottom-color: var(--surface); border-radius: var(--r-1) var(--r-1) 0 0; background: var(--surface); font: var(--t-small)/1.5 var(--mono); overflow-wrap: anywhere; }
+    #editor-pending { color: var(--warn); }
+    #editor-path { padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--border); color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); overflow-wrap: anywhere; }
+    .editor-wait { display: grid; justify-items: center; gap: var(--s-3); align-content: center; min-height: 10rem; padding: var(--s-4); text-align: center; color: var(--text-dim); font-size: var(--t-small); }
+    .editor-wait > .ui-icon { width: 2rem; height: 2rem; opacity: .65; }
+    #editor-wait-message { display: grid; gap: var(--s-2); }
+    .editor-wait strong { color: var(--text); }
+    .editor-document { display: grid; grid-template-columns: 2.25rem minmax(0,1fr); }
+    .editor-gutter { padding-top: var(--s-3); border-right: 1px solid var(--border); background: var(--bg); color: var(--text-dim); text-align: center; font: .95rem/1.7 var(--mono); }
+    #editor-text { display: block; width: 100%; resize: vertical; min-height: 9rem; padding: var(--s-3); color: var(--text); background: var(--surface); border: 0; border-radius: 0; font: .95rem/1.7 var(--mono); }
+    .editor-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-3); border-top: 1px solid var(--border); background: var(--bg); }
+    #editor-file-state { border: 1px solid var(--border-bright); border-radius: var(--r-1); padding: var(--s-1) var(--s-2); font: var(--t-label)/1.3 var(--mono); }
+    #editor-file-state[data-state="pending"] { color: var(--warn); border-color: var(--warn); }
+    #editor-file-state[data-state="durable"] { color: var(--ok); border-color: var(--ok); }
+    #editor-status { color: var(--text-dim); font-size: var(--t-label); }
+    .copy-board { display: grid; gap: var(--s-3); margin-top: var(--s-4); }
+    .copy { padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--bg); }
+    .copy-header { display: flex; align-items: center; gap: var(--s-2); color: var(--text-dim); }
+    .copy-file { display: flex; align-items: center; gap: var(--s-2); margin-top: var(--s-3); font: var(--t-small)/1.5 var(--mono); overflow-wrap: anywhere; }
+    .copy-file .ui-icon { color: var(--accent); }
+    .copy strong { display: block; padding: var(--s-2) var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font: var(--t-small)/1.5 var(--mono); margin-block: var(--s-2); }
+    .copy small { display: block; color: var(--text-dim); }
+    .copy.dirty { border-left: 3px solid var(--warn); }
+    .copy.durable { border-left: 3px solid var(--ok); }
+    .handoff { padding: var(--s-3); border-left: 3px solid var(--accent); background: var(--bg); margin-top: var(--s-4); font-size: var(--t-small); }
+    .handoff p { color: var(--text-dim); }
+    figcaption { margin-top: var(--s-4); }
+    .inspector { border-left: 1px solid var(--border); padding: var(--s-5); }
+    .inspector > section { scroll-margin-top: calc(var(--os-nav-height,7rem) + var(--os-dashboard-height,8rem) + 1rem); }
+    .inspector > section + section { margin-top: var(--s-6); }
+    .ready .inspector > section { margin-top: 0; }
+    .inspector section > p:not(.takeaway) { color: var(--text-dim); }
+    .identity { padding: var(--s-3); margin-top: var(--s-3); border: 1px solid var(--border); font: var(--t-small)/1.6 var(--mono); overflow-wrap: anywhere; }
+    .mini-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--s-2); margin-top: var(--s-3); }
+    .mini-card { padding: var(--s-2); border: 1px solid var(--border); border-radius: var(--r-1); font-size: var(--t-small); overflow-wrap: anywhere; }
+    .mini-card strong, .mini-card small { display: block; }
+    .mini-card small { color: var(--text-dim); margin-top: var(--s-1); }
+    .mini-card.active, .mini-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
+    .mini-card.blocked { border-style: dashed; border-color: var(--warn); }
+    .mini-card.done { border-color: var(--ok); }
+    .mini-lanes { margin-top: var(--s-3); font: var(--t-small)/1.6 var(--mono); }
+    .mini-stats { margin-top: var(--s-3); font-size: var(--t-small); }
+    #save-result { padding: var(--s-3); margin-top: var(--s-3); border: 1px solid var(--warn); font-size: var(--t-small); }
+    .step-footer { justify-content: space-between; margin-top: var(--s-4); }
+    #journey-status { margin-top: var(--s-3); font-size: var(--t-small); color: var(--text-dim); }
+    footer { margin-top: var(--s-5); font-size: var(--t-small); }
+    footer li + li { margin-top: var(--s-2); }
+    noscript, #model-error { padding: var(--s-3); border: 1px solid var(--border); margin-top: var(--s-4); }
+    @media (max-width:760px) {
+      main, .journey-nav-inner { padding-inline: var(--s-4); }
+      .workspace { grid-template-columns: minmax(0,1fr); }
+      .scene { position: static; }
+      .inspector { border-left: 0; border-top: 1px solid var(--border); padding: var(--s-4); }
+      #event-position { flex-basis: 100%; }
     }
-    @media print { .js-only, .ready .js-only { display: none !important; } section { break-inside: avoid; } }
+    @media print {
+      .journey-nav, .js-only, .ready .js-only, .ready .toolbar.js-only, .skip-link { display: none !important; }
+      main { max-width: none; padding: 0; }
+      .workspace { display: block; border: 0; }
+      .scene, .os-dashboard { position: static; }
+      #save-result, .sr-only { display: none !important; }
+      .inspector { padding: 0; border: 0; }
+      .inspector > section[hidden] { display: block !important; }
+      .ready .inspector > section { margin-top: var(--s-6); break-inside: avoid; }
+    }
   </style>
   <link rel="stylesheet" href="assets/shared.css">
 </head>
-<body data-guide="os">
+<body>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+  <symbol id="os-icon-file" viewBox="0 0 24 24"><path d="M14 2H5v20h14V7Z M14 2v5h5 M8 12h8 M8 16h6"/></symbol>
+  <symbol id="os-icon-editor" viewBox="0 0 24 24"><path d="M3 4h18v16H3Z M3 8h18 M7 6h.01 M10 6h.01 M7 12h10 M7 16h6"/></symbol>
+  <symbol id="os-icon-memory" viewBox="0 0 24 24"><path d="M5 5h14v14H5Z M9 9h6v6H9Z M9 2v3 M15 2v3 M9 19v3 M15 19v3 M2 9h3 M2 15h3 M19 9h3 M19 15h3"/></symbol>
+  <symbol id="os-icon-drive" viewBox="0 0 24 24"><path d="M4 4h16v16H4Z M4 14h16 M16 17h1 M8 17h.01"/></symbol>
+</defs></svg>
 <a class="skip-link" href="#main">Skip to guide</a>
 <nav class="site-nav" aria-label="Collection"><div class="site-nav-inner"><a class="site-home" href="index.html">← Interactive Guides</a></div></nav>
+<nav class="journey-nav" aria-label="Editor journey"><div class="journey-nav-inner"><div class="journey-heading"><span>How your OS runs an app</span><span id="journey-position">1 / 5</span></div><div class="step-links"><a href="#launch" data-step="0" aria-current="step">1. Launch</a><a href="#open" data-step="1">2. Open</a><a href="#read" data-step="2">3. Read</a><a href="#edit" data-step="3">4. Edit</a><a href="#save" data-step="4">5. Save</a></div></div></nav>
 <main id="main">
-  <header>
-    <div class="eyebrow">Operating System Fundamentals</div>
-    <h1>How an operating system runs your programs</h1>
-    <p class="lead">Open an app. Edit a file. Save it. Explore the mechanisms that make those familiar actions work.</p>
-    <nav class="section-nav" aria-label="Guide sections"><a href="#kernel">1 · Kernel</a><a href="#processes">2 · Processes</a><a href="#memory">3 · Memory</a><a href="#pressure">4 · RAM pressure</a><a href="#files">5 · Files</a><a href="#drivers">6 · Drivers</a><a href="#save">7 · Saving</a><a href="#machines">8 · Virtual machines</a><a href="#journey">9 · The whole journey</a></nav>
-    <p class="note">Local teaching simulations, with Unix-like examples. No real files, devices, or virtual machines are changed.</p>
-    <noscript><p class="result">JavaScript is off. The explanations and examples below remain readable; enable JavaScript for the simulations and playback.</p></noscript>
-    <p class="result" id="model-error" hidden>Interactive models could not load. Keep this page beside the assets folder. The written guide still works.</p>
-  </header>
-
-  <section id="kernel" data-tab-label="Kernel" data-tab-note="Access & privilege" aria-labelledby="kernel-title">
-    <div class="eyebrow">1 · A coordinator, not a desktop</div><h2 id="kernel-title">The kernel guards the boundary.</h2>
-    <div class="concept-grid"><div class="concept-card"><strong>Hardware</strong><span>CPU executes. RAM holds active data. Storage persists it.</span></div><div class="concept-card"><strong>Kernel</strong><span>Allocates resources and checks privileged requests.</span></div><div class="concept-card"><strong>Wider OS</strong><span>Includes services and tools. A desktop or shell is an interface.</span></div></div>
-    <figure class="panel">
-      <div class="toolbar js-only"><label for="kernel-action">Application action</label><select id="kernel-action" data-choice><option value="allowed">Open a file I can read</option><option value="denied">Open a protected file</option><option value="calculate">Calculate 2 + 2</option></select></div>
-      <div id="kernel-route" class="route"><div class="card">Application · user mode</div><div class="card">System-call entry</div><div class="card">Kernel · validates request</div><div class="card">Return to application</div></div>
-      <div class="playback js-only js-block" id="kernel-player"></div>
-      <div class="narration"><h3 id="kernel-heading">Ask through a controlled entry point.</h3><p id="kernel-description" role="status">An application can request file access using a system call. The kernel checks the request; it does not give the app unrestricted access to the machine.</p></div>
-      <p class="note" data-model-note>This Unix-like example omits library wrappers and filesystem details. A library function need not make a system call. Switching privilege mode need not switch to another process.</p>
-      <figcaption>Fig. 1 — Ordinary calculations stay in user mode. Requests for OS services cross a checked boundary.</figcaption>
-    </figure>
-    <p class="takeaway">“Administrator” is a user identity with permissions. “Kernel mode” is a CPU execution privilege. They are not the same thing.</p>
+  <header><div class="eyebrow">Operating system fundamentals</div><h1>How your OS runs an app</h1><p class="lead">Launch an editor. Open a note. Make the edit last.</p><noscript>The simulator needs JavaScript. The five stages, optional close-ups, and model notes remain readable below.</noscript><p id="model-error" hidden>The models could not load. Keep this page beside the assets folder; the written explanations still work.</p></header>
+  <section id="journey" aria-label="One editor, from launch to durable save">
+    <div class="os-dashboard" role="group" aria-label="Current editor state">
+      <div class="metrics"><div class="metric"><strong id="process-state">Not started</strong><span>editor process</span></div><div class="metric"><strong id="storage-reads">0</strong><span>storage reads requested</span></div><div class="metric"><strong id="edit-durable">No new edit</strong><span>latest edit durable?</span></div></div>
+      <p id="os-event-announcement" class="sr-only" role="status" aria-atomic="true"></p>
+      <div class="toolbar js-only" id="stage-controls"><button type="button" id="stage-event-previous" disabled>← Prev event</button><button type="button" id="stage-play" class="primary" aria-pressed="false">Play stage</button><button type="button" id="stage-event-next">Next event →</button><span id="event-position">Launch · conceptual events</span></div>
+    </div>
+    <div class="workspace">
+      <figure class="scene" aria-label="The same editor and copies of its file">
+        <div class="event-caption"><div class="label" id="os-owner">Launcher · user mode</div><h3 id="os-event-title">Launch the editor.</h3><p id="os-event-description">The OS creates a process and its resources. No real program is launched.</p></div>
+        <div class="editor" role="group" aria-label="Simulated Notes editor">
+          <div class="editor-titlebar"><svg class="ui-icon" aria-hidden="true"><use href="#os-icon-editor"/></svg><strong>Notes</strong><span class="small muted">simulation</span><span class="window-controls" aria-hidden="true"><span>−</span><span>□</span><span>×</span></span></div>
+          <div class="editor-tabs" id="editor-tabs" hidden><div class="editor-tab"><svg class="ui-icon" aria-hidden="true"><use href="#os-icon-file"/></svg><span id="editor-filename">todo.txt</span><span id="editor-pending" aria-label="Latest edit not durable" title="Latest edit not yet durable" hidden>●</span></div></div>
+          <div id="editor-path">No document open</div>
+          <div class="editor-wait" id="editor-wait"><svg class="ui-icon" aria-hidden="true"><use href="#os-icon-file"/></svg><div id="editor-wait-message"><strong>No document open.</strong><span>Open a file, then read its bytes into this editor.</span></div></div>
+          <div class="editor-document" id="editor-document" hidden><div class="editor-gutter" aria-hidden="true">1</div><textarea id="editor-text" aria-label="Simulated editor document" readonly hidden></textarea></div>
+          <div class="editor-footer"><span id="editor-file-state">No file</span><p id="editor-status">This preview never changes a real file.</p></div>
+        </div>
+        <p id="memory-status" class="small muted" style="margin-top:var(--s-3)">Each process gets its own virtual address-space view.</p>
+        <div class="handoff" id="cpu-handoff" hidden><strong id="handoff-title">The editor is waiting.</strong><p id="handoff-description">Another ready task can use the CPU while storage works.</p></div>
+        <div class="copy-board" role="group" aria-label="Other copies of the same file">
+          <div class="copy" id="copy-os"><div class="copy-header"><svg class="ui-icon" aria-hidden="true"><use href="#os-icon-memory"/></svg><div class="label">OS file cache · volatile</div></div><div class="copy-file"><svg class="ui-icon" aria-hidden="true"><use href="#os-icon-file"/></svg><span data-copy-filename>todo.txt</span></div><strong id="copy-os-value">Not cached</strong><small id="copy-os-note">Reads can be satisfied here without contacting storage.</small></div>
+          <div class="copy" id="copy-device"><div class="copy-header"><svg class="ui-icon" aria-hidden="true"><use href="#os-icon-drive"/></svg><div class="label">Device write cache · volatile</div></div><div class="copy-file"><svg class="ui-icon" aria-hidden="true"><use href="#os-icon-file"/></svg><span data-copy-filename>todo.txt</span></div><strong id="copy-device-value">Buy milk</strong><small>Accepted by the device is not yet durable in this model.</small></div>
+          <div class="copy" id="copy-disk"><div class="copy-header"><svg class="ui-icon" aria-hidden="true"><use href="#os-icon-drive"/></svg><div class="label">Persistent file</div></div><div class="copy-file"><svg class="ui-icon" aria-hidden="true"><use href="#os-icon-file"/></svg><span data-copy-filename>todo.txt</span></div><strong id="copy-disk-value">Buy milk</strong><small id="copy-disk-note">Existing durable version.</small></div>
+        </div>
+        <figcaption>Unix-like, local teaching model. Events are not equal durations or measured performance. No real files or devices are changed.</figcaption>
+      </figure>
+      <div class="inspector">
+        <section id="launch" data-journey-step aria-labelledby="launch-title"><div class="label">1 · Launch</div><h2 id="launch-title" tabindex="-1">A program becomes a process.</h2><p>The kernel creates resources and virtual mappings. A needed code page is loaded, and the scheduler gives the editor a CPU turn. Ordinary instructions then execute directly on the CPU.</p><p class="takeaway">The kernel coordinates and checks privileged work; it does not interpret every application instruction.</p>
+          <details id="kernel"><summary>What crosses the user/kernel boundary?</summary><p>File access uses a checked system-call entry point. The kernel validates arguments and permissions, then returns a result. Calculating 2 + 2 normally stays in user mode. A library function need not make a system call; changing privilege mode need not switch processes.</p><p>“Administrator” is a user identity with permissions. “Kernel mode” is a CPU execution privilege—not the same thing. The wider OS also includes services and interfaces beyond its kernel.</p></details>
+          <details id="processes"><summary>How do threads share CPU time?</summary><p>A process owns resources; its threads share them. Runnable threads can wait for CPU time, run, or block for an event. This separate round-robin close-up has one thread per process and nine CPU ticks of work. Its toy ticks do not set the editor story’s timing.</p><div class="js-only"><label class="control">CPU cores<select id="cpu-cores" data-choice><option value="1">1 core</option><option value="2">2 cores</option></select></label><div class="toolbar" style="margin-top:var(--s-3)"><button type="button" id="cpu-next">Next CPU tick</button><button type="button" id="cpu-reset">Restart example</button></div></div><div class="mini-lanes" id="cpu-lanes">One core executes one modeled thread at a time.</div><div class="mini-grid" id="cpu-tasks"></div><p id="cpu-description">When the editor waits for storage, another ready task can run.</p><p>Concurrency means making progress on several tasks; parallelism means executing simultaneously. This example uses zero switching cost, one-tick turns, and an independently progressing I/O device. Real schedulers use richer policies.</p></details>
+        </section>
+        <section id="open" data-journey-step aria-labelledby="open-title"><div class="label">2 · Open</div><h2 id="open-title" tabindex="-1">Ask for a file—not a disk address.</h2><p>The editor asks to open <code>/notes/todo.txt</code>. Directories resolve its name, the kernel checks access, and a descriptor refers to the file object. Opening it does not yet read the document’s bytes.</p><div class="identity" id="file-identity">Path → directory entry → inode 42<br>Open → descriptor 3 → the same object</div><div class="experiment js-only"><span class="label">Try it · access and identity</span><label class="check"><input id="allow-file" type="checkbox" checked> Allow this caller to read the file</label><div class="toolbar" style="margin-top:var(--s-3)"><button type="button" id="rename-file">Rename to shopping.txt</button></div><p id="rename-note" class="small muted">After opening, renaming the file changes its name—not the object referenced by the descriptor.</p></div><p class="takeaway">Permission denial is an error the editor can handle, not an automatic process crash.</p><details id="files"><summary>Where are filenames, metadata, and bytes?</summary><p>Directories associate names with objects. Inodes hold metadata and allocation information; data blocks hold bytes. A block device knows addresses, not filenames. Later reads and writes normally use a descriptor and offset rather than resolving the name every time.</p><p>The rename stays within one filesystem and does not change file contents or inode 42. This shows identity, not rename crash-durability. Network, memory-backed, and synthetic filesystems need not use local disk at all.</p></details></section>
+        <section id="read" data-journey-step aria-labelledby="read-title"><div class="label">3 · Read</div><h2 id="read-title" tabindex="-1">Cached bytes—or a trip to storage.</h2><p id="read-description">A cache miss goes through a driver to the device. The editor blocks while I/O runs. Completion makes it ready; a later CPU turn lets the read return.</p><div class="experiment js-only"><span class="label">Try it · where are the document bytes?</span><label class="check"><input id="document-cached" type="checkbox"> Document already in the OS file cache</label><label class="check"><input id="slow-storage" type="checkbox"> Slow storage · add waiting events</label><p class="small muted" id="cache-note">This changes the document read. The executable still starts with one cold code-page read.</p></div><p class="takeaway">Waiting for storage does not require the editor to keep a CPU busy.</p><details id="drivers"><summary>What do the driver and interrupt do?</summary><p>The driver turns the read into device-specific work. This blocking reader sleeps. A device completion interrupt leads to OS handling that makes the thread ready—not automatically running. The scheduler chooses when it next gets CPU time.</p><p>Cache hits can bypass the storage request. System calls and interrupts are different events. Real systems also use asynchronous APIs, queues, polling, DMA, and deferred completion work. Not every interrupt is an I/O completion.</p></details></section>
+        <section id="edit" data-journey-step aria-labelledby="edit-title"><div class="label">4 · Edit</div><h2 id="edit-title" tabindex="-1">Change your copy, not the stored file.</h2><p>The editor adds “+ bread” in its own document buffer. The OS’s cached file and persistent version still say “Buy milk”. Neither typing nor allocating memory automatically writes the file.</p><div class="experiment js-only"><span class="label">Try it · put memory under pressure</span><label class="check"><input id="memory-pressure" type="checkbox"> Reclaim a clean code page, then touch it again</label><p class="small muted">This forces an extra executable-page read. The document and its stored bytes are unchanged by that reclamation.</p></div><p class="takeaway">A page fault is an access for the OS to handle—not necessarily a disk read or a crash.</p>
+          <details id="memory"><summary>How does a virtual address find RAM?</summary><p>This independent inspector uses toy 16-byte pages. It explains address translation without changing the editor’s mappings or document. Two processes can use the same virtual address for different physical frames, or deliberately share a frame.</p><div class="js-only"><div class="mini-grid"><label class="control">Process<select id="memory-process" data-choice><option value="editor">Editor</option><option value="player">Music player</option></select></label><label class="control">Access<select id="memory-access" data-choice><option value="read">Read</option><option value="write">Write</option></select></label></div><label class="control">Virtual address <output id="memory-address-value">0</output><input id="memory-address" type="range" min="0" max="63" value="0"></label></div><div class="mini-grid" id="memory-pages"></div><p id="memory-description">Page plus offset maps to frame plus offset. Shared pages can have read-only access.</p><p>First use may allocate a zero-filled page without reading storage. A storage-backed page may need a read; unmapped or disallowed accesses are rejected. This inspector explains faults but does not resolve them. Stacks and heaps both live in virtual address spaces; every allocation need not cause a system call or a fresh physical page.</p></details>
+          <details id="pressure"><summary>Inspect clean-page reclamation</summary><p>A separate cold, clean file-page trace: A → B → C → A → D → B → E → A. Exact LRU is a teaching policy, not a claim about a real OS. This example’s counts do not add to the editor story’s read counter.</p><div class="js-only"><label class="control">Available frames<select id="pressure-capacity" data-choice><option value="2">2 frames</option><option value="3" selected>3 frames</option><option value="4">4 frames</option><option value="5">5 frames</option></select></label><div class="toolbar" style="margin-top:var(--s-3)"><button type="button" id="pressure-next">Next reference</button><button type="button" id="pressure-reset">Restart example</button></div></div><div class="mini-grid" id="pressure-ram"></div><p id="pressure-stats" class="mini-stats">0 storage reads · 0 hits</p><p id="pressure-description">Initially empty frames.</p><p>Clean file pages can be reclaimed and reloaded. Dirty file pages require writeback before their changes can be discarded. Anonymous memory may use swap, if configured. If reclamation is insufficient, allocations can fail or a process may be terminated. Virtual memory exists even without swap.</p></details>
+        </section>
+        <section id="save" data-journey-step aria-labelledby="save-title"><div class="label">5 · Save</div><h2 id="save-title" tabindex="-1">Written is not yet durable.</h2><p>Play this stage or use Next event. A buffered write reaches the OS cache; writeback reaches the device cache; successful synchronization makes this existing file version durable.</p><div class="experiment js-only"><span class="label">Try it · compare failure at this event</span><div class="toolbar"><button type="button" id="save-app-crash">What if the app crashes?</button><button type="button" id="save-power-loss">What if power fails?</button></div></div><div id="save-result" role="status" hidden></div><p class="takeaway">An app crash leaves the OS alive. Power loss removes volatile copies.</p><details><summary>What does “durable” promise here?</summary><p>This Linux-inspired model updates an existing file. It assumes successful fsync and a storage stack that honors its flush contract. Tiny whole-file versions change atomically for teaching; real interrupted writes may be partial. No further writeback happens between our what-if failure and inspection.</p><p>New or renamed files may also need directory synchronization. Our rename demonstrates file identity, not durability of the directory change. Closing a file does not inherently synchronize it. No promise covers arbitrary hardware failure.</p></details><details><summary>Does journaling save the latest edit?</summary><p>Not by itself. Journaling helps recover consistent filesystem structures; metadata journaling need not journal contents. A consistent filesystem can still have lost application data. Copy-on-write is another design, not a universal atomic transaction across files.</p></details></section>
+      </div>
+    </div>
+    <div class="toolbar step-footer js-only" aria-label="Journey controls"><div class="toolbar"><button type="button" id="previous" disabled>← Back</button><button type="button" id="next" class="primary">Next stage →</button></div><button type="button" id="replay">Start over</button></div><p id="journey-status" class="js-only">Stage 1 of 5 · Launch.</p>
   </section>
-
-  <section id="processes" data-tab-label="Processes" data-tab-note="Share the CPU" aria-labelledby="processes-title">
-    <div class="eyebrow">2 · One program, many possible instances</div><h2 id="processes-title">Processes own resources. Threads take turns.</h2>
-    <p>A <strong>process</strong> is a running program instance. Its threads share resources; the scheduler chooses which runnable thread gets CPU time.</p>
-    <div class="concept-grid"><div class="concept-card"><strong>Running</strong><span>Executing on a CPU.</span></div><div class="concept-card"><strong>Ready</strong><span>Waiting for a CPU turn.</span></div><div class="concept-card"><strong>Blocked</strong><span>Waiting for an event, such as I/O.</span></div></div>
-    <figure class="panel">
-      <div class="two js-only js-grid"><div class="control"><label for="cpu-cores">CPU cores</label><select id="cpu-cores" data-choice><option value="1">1 core · take turns</option><option value="2">2 cores · run in parallel</option></select></div><div class="control"><label for="cpu-io">Editor’s I/O wait: <output id="cpu-io-value" for="cpu-io">3 ticks</output></label><input id="cpu-io" type="range" min="1" max="6" value="3"></div></div>
-      <div id="cpu-lanes" class="cpu-lanes space"><div class="cpu-lane">One core executes one of our modeled threads at a time.</div></div>
-      <div id="cpu-tasks" class="three space"><div class="card">Editor · 4 CPU ticks, with an I/O wait midway</div><div class="card">Music player · 3 CPU ticks</div><div class="card">Indexer · 2 CPU ticks</div></div>
-      <div class="playback js-only js-block" id="cpu-player"></div>
-      <div class="narration"><h3 id="cpu-heading">Watch the next CPU interval.</h3><p id="cpu-description" role="status">When the editor waits for storage, another ready task can use the processor.</p></div>
-      <p class="note" data-model-note>Each process has exactly one thread here. Round-robin scheduling uses one-tick turns, fixed work, no switching cost, and an independently progressing I/O device. The music task is a finite stand-in, not a real audio workload. Real schedulers use richer policies.</p>
-      <figcaption>Fig. 2 — Nine CPU ticks of work, distributed over time and cores. Each frame shows the start of an interval.</figcaption>
-    </figure>
-    <p class="takeaway">Concurrency means making progress on multiple tasks. Parallelism means executing work simultaneously.</p>
-  </section>
-
-  <section id="memory" data-tab-label="Memory" data-tab-note="Map an address" aria-labelledby="memory-title">
-    <div class="eyebrow">3 · Addresses are a view, not a location</div><h2 id="memory-title">Same address. Different bytes.</h2>
-    <p>The CPU translates virtual addresses using OS-managed mappings. A virtual <strong>page</strong> maps to a RAM <strong>frame</strong>, with access permissions. Processes can also deliberately share a frame.</p>
-    <figure class="panel">
-      <div class="two js-only js-grid"><div class="control"><label for="memory-process">Process</label><select id="memory-process" data-choice><option value="editor">Editor</option><option value="player">Music player</option></select></div><div class="control"><label for="memory-access">Operation</label><select id="memory-access" data-choice><option value="read">Read</option><option value="write">Write</option></select></div></div>
-      <div class="control space js-only js-grid"><label for="memory-address">Virtual address: <output id="memory-address-value" for="memory-address">0</output></label><input type="range" id="memory-address" min="0" max="63" value="0"></div>
-      <div class="narration"><h3 id="memory-heading">Virtual page + offset → frame + offset.</h3><p id="memory-description" role="status">The same virtual address can map to frame 3 for the editor and frame 5 for the player.</p></div>
-      <h3 class="space">This process’s page table</h3><div id="memory-pages" class="four"><div class="card">Page 0 · private</div><div class="card">Page 1 · shared, read-only</div><div class="card">Page 2 · first use or unmapped</div><div class="card">Page 3 · stored elsewhere</div></div>
-      <h3 class="space">Physical RAM frames</h3><div id="memory-ram" class="ram"><div class="card">Frame 1 · shared page</div><div class="card">Frame 3 · editor’s page</div><div class="card">Frame 5 · player’s page</div></div>
-      <p class="note" data-model-note>These toy pages hold only 16 bytes; real pages are much larger, often 4 KiB. Inspecting an access does not mutate the mappings. First-use and storage-backed faults are explained but not resolved in this inspector.</p>
-      <figcaption>Fig. 3 — Select a page or move the address slider. Try reading and writing the shared read-only page.</figcaption>
-    </figure>
-    <p class="takeaway">A page fault asks the OS to handle an access. It might allocate zero-filled memory, read backing storage, or reject the access—not necessarily crash or read a disk.</p>
-    <details><summary>What about stacks, heaps, and malloc?</summary><p>Stacks commonly hold call frames and local state; heaps support dynamically allocated objects. Both live in virtual address spaces. A runtime allocator can reuse memory it already manages, so every allocation does not require a system call or a fresh physical page. Copy-on-write can also make some write faults recoverable; the read-only example above deliberately has no such permission.</p></details>
-  </section>
-
-  <section id="pressure" data-tab-label="RAM pressure" data-tab-note="Keep or reload" aria-labelledby="pressure-title">
-    <div class="eyebrow">4 · When the working set does not fit</div><h2 id="pressure-title">Keep a page, or read it again.</h2>
-    <div class="concept-grid"><div class="concept-card"><strong>Clean file pages</strong><span>Can be reclaimed and reloaded.</span></div><div class="concept-card"><strong>Dirty file pages</strong><span>Need writeback before changed bytes can be discarded.</span></div><div class="concept-card"><strong>Anonymous memory</strong><span>May move to swap, if configured.</span></div></div>
-    <p class="small muted">If reclamation is insufficient, allocations can fail or a process may be terminated.</p>
-    <figure class="panel">
-      <div class="toolbar js-only"><label for="pressure-capacity">RAM available to this workload</label><select id="pressure-capacity" data-choice><option value="2">2 page frames</option><option value="3" selected>3 page frames</option><option value="4">4 page frames</option><option value="5">5 page frames</option></select></div>
-      <p class="small muted space">Same access sequence, every time. Click a reference to inspect that point.</p><div class="toolbar space js-only" id="pressure-trace" aria-label="Page reference timeline"></div>
-      <div class="ram space" id="pressure-ram"><div class="card">A → B → C → A → D → B → E → A</div></div>
-      <div class="metrics space"><div class="metric"><strong id="pressure-reads">0</strong><span>storage reads</span></div><div class="metric"><strong id="pressure-hits">0</strong><span>resident hits</span></div><div class="metric"><strong id="pressure-faults">0</strong><span>page faults in this trace</span></div></div>
-      <div class="playback js-only js-block" id="pressure-player"></div>
-      <div class="narration"><h3 id="pressure-heading">Start with empty frames.</h3><p id="pressure-description" role="status">A repeated page access avoids storage only while that page remains resident.</p></div>
-      <p class="note" data-model-note>Only clean file-backed pages are modeled here, initially cold. Every miss in this particular trace needs a read. Eviction uses exact least-recently-used order for teaching—not a claim about a real OS’s policy. No anonymous memory, dirty pages, or swapping is simulated.</p>
-      <figcaption>Fig. 4 — Compare capacities with the same workload. These are event counts, not performance predictions.</figcaption>
-    </figure>
-    <p class="takeaway">Virtual memory works even without swap. Swapping is one mechanism for managing pressure, not the definition of virtual memory.</p>
-  </section>
-
-  <section id="files" data-tab-label="Files" data-tab-note="Names to bytes" aria-labelledby="files-title">
-    <div class="eyebrow">5 · Names, objects, and bytes</div><h2 id="files-title">A name is not a disk address.</h2>
-    <p>Follow a file in a <strong>Unix-like, local filesystem</strong>. Directories resolve names; inodes hold file metadata; data blocks hold bytes. A block device knows addresses, not filenames.</p>
-    <figure class="panel">
-      <div class="toolbar js-only"><label for="file-choice">Explore a file</label><select id="file-choice" data-choice><option value="42">/notes/todo.txt</option><option value="81">/notes/ideas.txt</option></select><button type="button" id="file-open">Open a handle</button></div>
-      <div class="route" id="file-route"><div class="card">Path /notes/todo.txt</div><div class="card">Directory entry → inode 42</div><div class="card">Metadata → blocks 2, 7</div><div class="card">Bytes: Buy milk</div></div>
-      <p class="small muted space" id="file-handle">No open handle in this example.</p>
-      <div class="playback js-only js-block" id="file-player"></div>
-      <div class="narration"><h3 id="file-heading">Follow the lookup.</h3><p id="file-description" role="status">Directories resolve names to objects; the file’s metadata identifies its data blocks.</p></div>
-      <div class="two space js-only js-grid"><div class="control"><label for="file-name">New name within /notes</label><input class="text-input" type="text" maxlength="24" id="file-name" value="shopping.txt"></div><div class="control"><span class="small muted">Same filesystem; file contents unchanged</span><button type="button" id="file-rename">Rename selected file</button></div></div>
-      <p id="file-rename-result" class="small space" role="status"></p>
-      <p class="note" data-model-note>Four-byte filesystem blocks and two files keep the model small. Real allocation is more complex; device blocks need not match filesystem blocks. Network, memory-backed, and synthetic filesystems need not use local storage at all.</p>
-      <figcaption>Fig. 5 — Renaming this file changes its directory entry, not its inode or data blocks. An open handle continues to refer to the object.</figcaption>
-    </figure>
-    <details><summary>Do applications look up the name for every read?</summary><p>No. Opening a file normally returns a handle (a file descriptor in Unix-like APIs). Later reads and writes use that handle and an offset. Permissions, ownership, and access rules govern operations; a filename extension generally does not tell the kernel how to interpret the file’s contents.</p></details>
-  </section>
-
-  <section id="drivers" data-tab-label="Drivers" data-tab-note="Talk to devices" aria-labelledby="drivers-title">
-    <div class="eyebrow">6 · Software talks to hardware</div><h2 id="drivers-title">Submit work. Wait for completion.</h2>
-    <p><strong>Drivers</strong> translate requests into device-specific work. <strong>Interrupts</strong> notify the OS of events. Many drivers run in the kernel; user-mode drivers exist too.</p>
-    <figure class="panel">
-      <div class="toolbar js-only"><label for="io-path">Where are the requested bytes?</label><select id="io-path" data-choice><option value="miss">Not cached · read storage</option><option value="hit">Already in the page cache</option></select></div>
-      <div class="route" id="io-route"><div class="card">Application</div><div class="card">Kernel / cache</div><div class="card">Driver</div><div class="card">Storage device</div></div>
-      <div class="playback js-only js-block" id="io-player"></div>
-      <div class="narration"><h3 id="io-heading">A read does not always reach the device.</h3><p id="io-description" role="status">A cache hit can satisfy the read without storage I/O. A miss may block this task while other work proceeds.</p></div>
-      <p class="note" data-model-note>This is blocking, interrupt-driven I/O. Real systems also use asynchronous APIs, polling, queues, DMA, and deferred completion work. Not every interrupt is an I/O completion.</p>
-      <figcaption>Fig. 6 — A system call is an application request. An interrupt is a different kind of event, often arriving from hardware.</figcaption>
-    </figure>
-    <p class="takeaway">When I/O finishes, the task becomes ready. The scheduler still decides when it runs again.</p>
-  </section>
-
-  <section id="save" data-tab-label="Saving" data-tab-note="Make it durable" aria-labelledby="save-title">
-    <div class="eyebrow">7 · Visible is not necessarily durable</div><h2 id="save-title">Written is not yet durable.</h2>
-    <p>A buffered write can return after updating the OS’s <strong>page cache</strong>. Writeback and synchronization are later milestones. Compare an app crash with power loss.</p>
-    <figure class="panel">
-      <div class="four" id="save-layers"><div class="card">Application buffer</div><div class="card">OS page cache · volatile</div><div class="card">Device write cache · volatile</div><div class="card">Persistent storage</div></div>
-      <div class="playback js-only js-block" id="save-player"></div>
-      <div class="narration"><h3 id="save-heading">Start with an existing file.</h3><p id="save-description" role="status">The stored file says “Buy milk”. Edit it, write it, and synchronize it. Inspect each copy along the way.</p></div>
-      <div class="toolbar space js-only"><button type="button" id="save-app-crash">Simulate app crash</button><button type="button" id="save-power-loss">Simulate power loss</button></div>
-      <div class="result" id="save-result" role="status" hidden></div>
-      <p class="note" data-model-note>A Linux-inspired existing-file example: successful fsync plus a storage stack that honors flushes. Each modeled update atomically replaces the whole tiny file; real interrupted writes can be partial. No further writeback occurs between our simulated failure and inspection. A new or renamed file may also need its directory synchronized. No promise covers arbitrary hardware failure.</p>
-      <figcaption>Fig. 7 — An application crash leaves the OS and its cache alive. Power loss removes all volatile copies in this model.</figcaption>
-    </figure>
-    <details><summary>Does journaling guarantee my latest edits survive?</summary><p>Not by itself. Journaling can help recover consistent filesystem structures after a crash. Metadata journaling need not journal file contents. A structurally consistent filesystem can still have lost recent application data. Copy-on-write is another design approach; neither automatically makes every multi-file application operation atomic.</p></details>
-  </section>
-
-  <section id="machines" data-tab-label="Machines" data-tab-note="VMs & containers" aria-labelledby="machines-title">
-    <div class="eyebrow">8 · A machine inside a machine</div><h2 id="machines-title">Who supplies the kernel?</h2>
-    <p>A <strong>VM</strong> runs a guest kernel on virtual hardware managed by a hypervisor. An ordinary <strong>container</strong> isolates processes while sharing its hosting kernel.</p>
-    <figure class="panel">
-      <div class="toolbar js-only" aria-label="Execution environment"><button type="button" data-environment="native" aria-pressed="true">Native process</button><button type="button" data-environment="container" aria-pressed="false">Container</button><button type="button" data-environment="vm" aria-pressed="false">Virtual machine</button></div>
-      <div class="three space" id="vm-stacks"><div class="card" data-stack="native"><h3>Native</h3><ol class="stack"><li>Application process</li><li>Host kernel</li><li>Physical hardware</li></ol></div><div class="card" data-stack="container"><h3>Container</h3><ol class="stack"><li>Isolated processes</li><li>Shared hosting kernel</li><li>Physical hardware</li></ol></div><div class="card" data-stack="vm"><h3>VM</h3><ol class="stack"><li>Guest applications</li><li>Guest kernel + virtual devices</li><li>Hypervisor / hosting support</li><li>Physical hardware</li></ol></div></div>
-      <div class="route" id="vm-route"></div>
-      <div class="playback js-only js-block" id="vm-player"></div>
-      <div class="narration"><h3 id="vm-heading">Trace a file request through the layers.</h3><p id="vm-description" role="status">Virtual memory gives a process an address-space view. A virtual machine supplies an environment for an entire guest OS. These are different abstractions.</p></div>
-      <div class="toolbar space js-only"><button type="button" id="vm-app-crash">Simulate this app crashing</button><button type="button" id="vm-kernel-crash">Simulate its kernel crashing</button></div>
-      <p class="result" id="vm-result" role="status" hidden></p>
-      <p class="note" data-model-note>The trace uses a conventional hosted, virtual-device path; architectures and passthrough differ. VM-backed container isolation also exists, and desktop container tools often host Linux containers in a VM. Isolation is a design boundary, not an absolute security guarantee.</p>
-      <figcaption>Fig. 8 — Compare who supplies the kernel, then inspect the scope of a simulated failure.</figcaption>
-    </figure>
-    <details><summary>Where do QEMU, KVM, and “type 1 / type 2” fit?</summary><p>Type 1 and type 2 are conventional hypervisor categories, not complete architecture diagrams. KVM adds virtualization facilities to the Linux kernel; QEMU commonly supplies userspace machine/device models and uses KVM for hardware-assisted execution. QEMU can also emulate CPUs in software. A VM does not necessarily emulate every CPU instruction.</p></details>
-  </section>
-
-  <section id="journey" data-tab-label="The journey" data-tab-note="Launch to save" aria-labelledby="journey-title">
-    <div class="eyebrow">9 · The payoff</div><h2 id="journey-title">From launch to a durable save.</h2>
-    <p>Follow one edit. Watch the active component, the process state, and each copy of the file.</p>
-    <figure class="panel" id="journey-panel">
-      <div class="two js-only js-grid"><div class="control"><label for="journey-scenario">Same task, different conditions</label><select id="journey-scenario" data-choice><option value="normal">Normal conditions</option><option value="pressure">Memory pressure</option><option value="slow">Slow storage</option><option value="denied">File access denied</option></select></div><div class="control"><label for="journey-speed">Playback pace</label><select id="journey-speed" data-choice><option value="2200">Normal · 2.2 s per step</option><option value="4000">Slow · 4 s per step</option><option value="1000">Fast · 1 s per step</option></select></div></div>
-      <div class="playback js-only js-block" id="journey-player"></div>
-      <div class="narration"><div class="label" id="journey-owner">Active component: launcher</div><h3 id="journey-heading" class="space">Launch the editor.</h3><p id="journey-description" role="status">The launcher asks the OS to start a process. The editor will receive its own address space and resources.</p></div>
-      <div class="journey-board" id="journey-board"><div class="card" id="journey-process"><span class="label">Process</span><strong id="journey-process-value">Not started</strong><small id="journey-memory">Address space not created yet</small></div><div class="card" id="journey-app"><span class="label">Application’s document</span><strong id="journey-app-value">Not opened</strong><small>Editing this copy does not write storage.</small></div><div class="card" id="journey-cache"><span class="label">OS file cache</span><strong id="journey-cache-value">Not cached</strong><small id="journey-cache-note">File reads may need storage.</small></div><div class="card" id="journey-disk"><span class="label">Persistent file</span><strong id="journey-disk-value">Buy milk</strong><small id="journey-disk-note">Existing durable version</small></div></div>
-      <div class="metrics space"><div class="metric"><strong id="journey-reads">0</strong><span>storage reads requested in this story</span></div><div class="metric"><strong id="journey-write">Not yet</strong><span>buffered write returned?</span></div><div class="metric"><strong id="journey-durable">No new edit</strong><span>latest edit durable?</span></div></div>
-      <p class="note" data-model-note>Timeline steps are conceptual events, not equal durations or measured performance. Code and file reads each stand in for larger transfers. Slow storage adds waiting steps; pressure adds a clean-page eviction and reload. Scenario changes restart only this story. The other section controls remain independent.</p>
-      <figcaption>Fig. 9 — Autoplay to follow the narrative, pause to inspect, or drag the step slider to revisit any handoff.</figcaption>
-    </figure>
-    <p class="takeaway">The OS is not one mysterious operation. It is a collection of mechanisms for sharing resources, enforcing boundaries, and making useful work persist.</p>
-  </section>
-
-  <footer aria-labelledby="sources-title">
-    <h2 id="sources-title">Keep the abstractions separate.</h2><p>Program ≠ process. Virtual address ≠ RAM location. Filename ≠ storage block. Buffered write ≠ durable save. Virtual memory ≠ virtual machine.</p>
-    <h3 class="space">Sources &amp; further reading</h3>
-    <ul class="sources">
-      <li>OSTEP: <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-intro.pdf">Processes</a>, <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf">limited direct execution</a>, and <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf">scheduling</a>.</li>
-      <li>Linux kernel: <a href="https://docs.kernel.org/admin-guide/mm/concepts.html">Memory-management concepts</a> and <a href="https://docs.kernel.org/filesystems/vfs.html">virtual filesystem interface</a>.</li>
-      <li>Microsoft Learn: <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/gettingstarted/user-mode-and-kernel-mode">User/kernel mode</a>, <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/gettingstarted/virtual-address-spaces">virtual address spaces</a>, and <a href="https://learn.microsoft.com/en-us/windows/win32/memory/working-set">working sets and page faults</a>.</li>
-      <li>Microsoft Learn: <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/gettingstarted/what-is-a-driver-">What is a driver?</a> and <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/introduction-to-interrupt-service-routines">interrupt service routines</a>.</li>
-      <li>OSTEP: <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/file-intro.pdf">Files and directories</a>, <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/file-implementation.pdf">filesystem implementation</a>, and <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/file-journaling.pdf">crash consistency</a>.</li>
-      <li>Linux man-pages: <a href="https://man7.org/linux/man-pages/man2/fsync.2.html">fsync and directory synchronization</a>.</li>
-      <li>QEMU: <a href="https://www.qemu.org/docs/master/system/introduction.html">System-emulation architecture</a>; Linux: <a href="https://docs.kernel.org/virt/kvm/api.html">KVM API</a>; Microsoft: <a href="https://learn.microsoft.com/en-us/virtualization/windowscontainers/about/containers-vs-vm">containers versus VMs</a>.</li>
-    </ul>
-    <p class="note">AI-generated learning aid. All operations are simulated in this page: no real files are edited, no devices are controlled, and no VMs or processes are launched. Simplifications are stated beside each model. Verify important details against authoritative sources.</p>
-  </footer>
+  <footer><details><summary>Scope &amp; sources</summary><p>AI-generated learning aid. A deterministic Unix-like editor story, not a full operating system or performance model. Code and document reads stand for larger transfers. Scheduling, address translation, and clean-page LRU close-ups have their own clearly labeled teaching assumptions. No real files, processes, devices, or VMs are changed.</p><ul><li><a href="https://pages.cs.wisc.edu/~remzi/OSTEP/">OSTEP — Operating Systems: Three Easy Pieces</a></li><li><a href="https://docs.kernel.org/admin-guide/mm/concepts.html">Linux — Memory-management concepts</a></li><li><a href="https://docs.kernel.org/filesystems/vfs.html">Linux — Virtual filesystem interface</a></li><li><a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/gettingstarted/user-mode-and-kernel-mode">Microsoft — User mode and kernel mode</a></li><li><a href="https://man7.org/linux/man-pages/man2/fsync.2.html">Linux man-pages — fsync and directory synchronization</a></li></ul><p>Related: <a href="how-virtual-machines-work.html">How processes, containers, and virtual machines isolate work →</a></p></details></footer>
 </main>
 <script src="assets/os-model.js"></script>
+<script src="assets/os-journey-model.js"></script>
 <script src="assets/os-guide.js"></script>
 <script src="assets/guide-layout.js"></script>
 </body>

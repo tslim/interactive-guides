@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Compare polling, Server-Sent Events, and WebSocket at the same moment in a simulated conversation. Application waiting is not network latency.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <title>How live messages work — Interactive Guides</title>
+  <style>
+    html { scroll-behavior: smooth; }
+    main { max-width: 64rem; margin: auto; padding: var(--s-5) var(--s-5) var(--s-7); }
+    h1, h2, h3, p, figure { margin: 0; }
+    main h1 { margin: var(--s-2) 0 var(--s-3); font-size: clamp(1.875rem,3.7vw,2.75rem); }
+    h2 { margin-bottom: var(--s-4); }
+    h3 { font-size: var(--t-lead); margin-bottom: var(--s-3); }
+    p, li { max-width: 72ch; }
+    p + p { margin-top: var(--s-3); }
+    code { font-size: var(--t-small); overflow-wrap: anywhere; }
+    .eyebrow, .label { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+    .lead { font-size: 1.1rem; max-width: 60ch; color: var(--text-dim); }
+    .muted, figcaption { color: var(--text-dim); }
+    .small, figcaption { font-size: var(--t-small); }
+    .section { padding-top: var(--s-4); scroll-margin-top: var(--s-5); }
+    .panel { padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-2); background: var(--surface); }
+    .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5); }
+    .two > *, .metrics > * { min-width: 0; }
+    figcaption { margin-top: var(--s-3); max-width: 78ch; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+    .control { display: grid; gap: var(--s-2); font-size: var(--t-small); }
+    button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
+    .note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-small); }
+    details { border-top: 1px solid var(--border); padding-top: var(--s-3); margin-top: var(--s-5); }
+    summary { cursor: pointer; font-weight: 600; padding-block: var(--s-2); }
+    details p, details ul { color: var(--text-dim); margin-top: var(--s-3); }
+    .js-only { display: none; }
+    .ready .js-only { display: flex; }
+    .ready .js-grid { display: grid; }
+    .ready details.js-only { display: block; }
+    noscript, #model-error { display: block; border: 1px solid var(--risk); padding: var(--s-4); margin-top: var(--s-5); }
+    .skip-link { position: absolute; left: var(--s-4); top: -5rem; z-index: 10; background: var(--surface); padding: var(--s-3); }
+    .skip-link:focus { top: var(--s-3); }
+    .empty { color: var(--text-dim); font-size: var(--t-small); }
+    .msg-icon { width: 1.1rem; height: 1.1rem; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .story-dashboard { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.5fr); gap: var(--s-4); align-items: center; margin-top: var(--s-4); }
+    .metrics { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--s-2); }
+    .metric { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--bg); }
+    .metric > .msg-icon { color: var(--accent); }
+    .metric strong { display: block; font-size: var(--t-lead); font-variant-numeric: tabular-nums; }
+    .metric span { display: block; color: var(--text-dim); font-size: var(--t-label); }
+    .rt-controls { margin-top: 0; }
+    .rt-controls .primary { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    @media (prefers-color-scheme: dark) { .rt-controls .primary { color: var(--bg); } }
+    #rt-custom .control { padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--bg); }
+    #rt-custom button { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); }
+    .mode-nav { display: none; position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .ready .mode-nav { display: block; }
+    .mode-nav-inner { max-width: 64rem; margin: auto; padding: var(--s-3) var(--s-5); }
+    .mode-buttons { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--s-2); }
+    .mode-buttons button { min-width: 0; padding-inline: var(--s-2); }
+    #main, #realtime, #rt-player { scroll-margin-top: calc(var(--messaging-nav-height,5rem) + 1rem); }
+    .story-progress { margin-top: 0; }
+    .story-clock { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2); font-size: var(--t-small); }
+    #rt-clock { font: 600 var(--t-lead)/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+    #rt-story-progress { display: block; width: 100%; height: .65rem; margin-top: var(--s-2); accent-color: var(--accent); }
+    .rt-caption { border-top: 1px solid var(--border); padding-top: var(--s-3); margin-top: var(--s-4); }
+    .rt-caption h3 { margin-top: var(--s-2); }
+    .rt-scene { display: grid; grid-template-columns: minmax(0,1fr) 9rem minmax(0,1fr); gap: var(--s-3); margin-top: var(--s-4); align-items: stretch; }
+    .rt-scene > * { min-width: 0; }
+    .rt-endpoint { display: flex; flex-direction: column; border: 1px solid var(--border-bright); border-radius: var(--r-2); overflow: hidden; background: var(--bg); box-shadow: 0 2px 8px var(--lift); }
+    .rt-endpoint.active { border-color: var(--accent); }
+    .endpoint-header { display: flex; gap: var(--s-2); align-items: center; padding: var(--s-3); border-bottom: 1px solid var(--border); background: var(--surface); }
+    .endpoint-avatar { display: grid; place-items: center; width: 2rem; height: 2rem; flex-shrink: 0; border: 1px solid var(--border); border-radius: var(--r-1); color: var(--accent); background: var(--bg); }
+    .endpoint-heading { flex: 1; }
+    .endpoint-header h3 { margin: 0; font-size: 1rem; }
+    .endpoint-header p { margin-top: var(--s-1); font-size: var(--t-label); color: var(--text-dim); }
+    .message-count { display: grid; place-items: center; min-width: 1.5rem; height: 1.5rem; border: 1px solid var(--border); border-radius: 1rem; color: var(--text-dim); font: var(--t-label)/1 var(--mono); }
+    .endpoint-address { padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--border); color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); }
+    .endpoint-footer { margin-top: auto; padding: var(--s-2) var(--s-3); border-top: 1px solid var(--border); background: var(--surface); color: var(--text-dim); font-size: var(--t-label); }
+    .rt-inbox { flex: 1; list-style: none; padding: var(--s-3); margin: 0; min-height: 12rem; max-height: 20rem; overflow-y: auto; }
+    .rt-inbox li { max-width: 95%; width: fit-content; border: 1px solid var(--border); padding: var(--s-3); border-radius: var(--r-2) var(--r-2) var(--r-2) 2px; background: var(--surface); overflow-wrap: anywhere; }
+    .rt-inbox li + li { margin-top: var(--s-3); }
+    .rt-inbox .message-outgoing { margin-left: auto; border-color: var(--accent); border-radius: var(--r-2) var(--r-2) 2px var(--r-2); }
+    .message-head { display: flex; flex-wrap: wrap; gap: var(--s-2); justify-content: space-between; color: var(--accent); font: 600 var(--t-label)/1.4 var(--body); }
+    .message-text { margin-top: var(--s-2); font-size: var(--t-small); }
+    .rt-inbox .empty { display: grid; justify-items: center; gap: var(--s-2); max-width: none; width: 100%; margin: var(--s-3) 0; padding: var(--s-4) var(--s-2); border: 1px dashed var(--border); border-radius: var(--r-1); background: transparent; text-align: center; }
+    .empty .msg-icon { width: 1.75rem; height: 1.75rem; opacity: .65; }
+    .rt-inbox small { display: block; color: var(--text-dim); font: var(--t-label)/1.5 var(--body); margin-top: var(--s-2); }
+    .rt-channel { align-self: center; padding-block: var(--s-3); text-align: center; }
+    .channel-badge { display: inline-flex; align-items: center; gap: var(--s-1); padding: var(--s-1) var(--s-2); margin-bottom: var(--s-2); border: 1px solid var(--border); border-radius: 1rem; font: var(--t-label)/1.4 var(--mono); color: var(--text-dim); background: var(--bg); }
+    .channel-badge[data-state="open"] { color: var(--ok); border-color: var(--ok); }
+    .channel-badge[data-state="queued"] { color: var(--warn); border-color: var(--warn); }
+    #rt-channel-label { font: var(--t-small)/1.5 var(--mono); color: var(--accent); }
+    .rt-track { position: relative; display: grid; place-items: center; min-height: 4rem; margin-block: var(--s-3); border-block: 1px dashed var(--border-bright); overflow: hidden; --travel-x: 2rem; --travel-y: 0rem; }
+    .rt-track.open { border-block-style: solid; }
+    .rt-token { padding: var(--s-1) var(--s-2); background: var(--surface); border: 2px solid var(--accent); border-radius: var(--r-1); font: var(--t-label)/1.5 var(--mono); animation-duration: 800ms; animation-timing-function: ease-in-out; }
+    .rt-track[data-flow="to-server"] .rt-token { animation-name: to-server; }
+    .rt-track[data-flow="to-browser"] .rt-token { animation-name: to-browser; }
+    .rt-track[data-flow="roundtrip"] .rt-token, .rt-track[data-flow="open"] .rt-token { animation-name: round-trip; }
+    .rt-track[data-flow="queued"] .rt-token { border-style: dashed; border-color: var(--warn); }
+    @keyframes to-server { from { transform: translate(calc(-1 * var(--travel-x)),calc(-1 * var(--travel-y))); } to { transform: translate(var(--travel-x),var(--travel-y)); } }
+    @keyframes to-browser { from { transform: translate(var(--travel-x),var(--travel-y)); } to { transform: translate(calc(-1 * var(--travel-x)),calc(-1 * var(--travel-y))); } }
+    @keyframes round-trip { 0%,100% { transform: translate(calc(-1 * var(--travel-x)),calc(-1 * var(--travel-y))); } 50% { transform: translate(var(--travel-x),var(--travel-y)); } }
+    #rt-flow-label { font-size: var(--t-small); color: var(--text-dim); min-height: 4rem; }
+    .server-outbox { padding: var(--s-3); border-top: 1px solid var(--border); background: var(--surface); }
+    .outbox-heading { display: flex; align-items: center; gap: var(--s-2); color: var(--text-dim); font-size: var(--t-label); }
+    .outbox-heading > span:first-of-type { flex: 1; }
+    .rt-pending { padding: var(--s-2); margin-top: var(--s-2); border: 1px dashed var(--border); border-radius: var(--r-1); font-size: var(--t-small); color: var(--text-dim); overflow-wrap: anywhere; }
+    .rt-pending.waiting { border-color: var(--warn); color: var(--warn); }
+    .queue-messages { list-style: none; padding: 0; margin: var(--s-2) 0 0; max-height: 9rem; overflow-y: auto; }
+    .queue-messages li { padding: var(--s-2); border-left: 2px solid var(--warn); background: var(--bg); font-size: var(--t-small); overflow-wrap: anywhere; }
+    .queue-messages li + li { margin-top: var(--s-2); }
+    .queue-messages small { display: block; margin-top: var(--s-1); color: var(--text-dim); font-size: var(--t-label); }
+    .rt-countdown { margin-top: var(--s-4); font-size: var(--t-small); color: var(--text-dim); }
+    .rt-countdown progress { width: 100%; display: block; height: .75rem; margin-top: var(--s-2); accent-color: var(--accent); }
+    .rt-custom-input { width: 100%; min-width: 0; padding: var(--s-3); color: var(--text); background: var(--bg); border: 1px solid var(--border-bright); border-radius: var(--r-1); }
+    .event-log { padding-left: var(--s-5); font: var(--t-small)/1.6 var(--mono); max-height: 18rem; overflow-y: auto; }
+    .event-log li + li { margin-top: var(--s-2); }
+    .event-log li { overflow-wrap: anywhere; }
+    #rt-status { color: var(--text-dim); }
+    footer { margin-top: var(--s-7); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+    footer > details { border-top: 0; padding-top: 0; margin-top: 0; }
+    .sources { padding-left: var(--s-5); }
+    .sources li + li { margin-top: var(--s-2); }
+    @media (max-width: 760px) {
+      main { padding: var(--s-5) var(--s-4) var(--s-7); }
+      .two { grid-template-columns: minmax(0,1fr); }
+      .panel { padding: var(--s-4); }
+      .rt-scene { grid-template-columns: minmax(0,1fr); }
+      .rt-inbox { min-height: 9rem; }
+      .story-dashboard { grid-template-columns: minmax(0,1fr); gap: var(--s-3); }
+      .rt-channel { width: 100%; }
+      .rt-track { --travel-x: 0rem; --travel-y: 1rem; }
+      .mode-nav-inner { padding-inline: var(--s-4); }
+      .mode-buttons button { font-size: var(--t-label); }
+      .rt-caption { min-height: 0; }
+      #rt-flow-label { min-height: 0; }
+    }
+    @media (max-width: 420px) {
+      .metric { padding: var(--s-2); }
+      .metric > .msg-icon { display: none; }
+    }
+    @media print {
+      .mode-nav, .ready .mode-nav, .js-only, .ready .js-only, .ready details.js-only, .skip-link { display: none; }
+      main { max-width: none; padding: 0; }
+      .section { padding-top: var(--s-5); }
+      .rt-caption { min-height: 0; }
+      .rt-inbox, .event-log, .queue-messages { min-height: 0; max-height: none; overflow: visible; }
+      .rt-endpoint { break-inside: avoid; }
+    }
+  </style>
+  <link rel="stylesheet" href="assets/shared.css">
+</head>
+<body>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+  <symbol id="msg-icon-browser" viewBox="0 0 24 24"><path d="M3 4h18v16H3Z M3 8h18 M7 6h.01 M10 6h.01"/></symbol>
+  <symbol id="msg-icon-server" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="8" rx="1"/><rect x="4" y="13" width="16" height="8" rx="1"/><path d="M8 7h.01 M8 17h.01 M12 7h5 M12 17h5"/></symbol>
+  <symbol id="msg-icon-chat" viewBox="0 0 24 24"><path d="M3 4h18v13H9l-6 4Z M7 8h10 M7 12h7"/></symbol>
+  <symbol id="msg-icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="msg-icon-cycle" viewBox="0 0 24 24"><path d="M20 8A9 9 0 0 0 4 6 M4 2v4h4 M4 16a9 9 0 0 0 16 2 M20 22v-4h-4"/></symbol>
+  <symbol id="msg-icon-send" viewBox="0 0 24 24"><path d="m3 3 19 9-19 9 4-9Z M7 12h15"/></symbol>
+</defs></svg>
+<a class="skip-link" href="#main">Skip to guide</a>
+<nav class="site-nav" aria-label="Collection"><div class="site-nav-inner"><a class="site-home" href="index.html">← Interactive Guides</a></div></nav>
+<nav class="mode-nav" aria-label="Messaging pattern"><div class="mode-nav-inner"><div class="mode-buttons">
+  <button type="button" data-mode="poll" aria-pressed="true" aria-controls="rt-player">Polling</button>
+  <button type="button" data-mode="sse" aria-pressed="false" aria-controls="rt-player" aria-label="Server-Sent Events (SSE)">SSE</button>
+  <button type="button" data-mode="ws" aria-pressed="false" aria-controls="rt-player">WebSocket</button>
+</div></div></nav>
+<main id="main">
+  <header>
+    <div class="eyebrow">Live messaging</div>
+    <h1>How live messages work</h1>
+    <p class="lead">One conversation. Three ways to deliver it.</p>
+    <p class="small"><a href="how-data-travels.html">Packets &amp; network delay →</a></p>
+    <noscript>The simulator needs JavaScript. The explanations and model notes below remain readable.</noscript>
+    <p id="model-error" hidden>The simulator could not load. Keep <code>assets/network-model.js</code> alongside this guide’s other assets. The explanations below remain readable.</p>
+  </header>
+
+  <section id="realtime" class="section" aria-label="Live messaging simulator">
+    <figure class="panel" id="rt-player">
+      <div class="toolbar rt-controls js-only"><button type="button" id="rt-back" disabled>← Prev event</button><button type="button" id="rt-play" class="primary" aria-pressed="false">Play</button><button type="button" id="rt-tick">Next event →</button><button type="button" id="rt-reset">Restart</button></div>
+      <div class="story-dashboard"><div class="story-progress"><div class="story-clock"><span class="label">Conversation time</span><strong id="rt-clock">0 s</strong><span class="muted">/ 10 s</span></div><progress id="rt-story-progress" max="10" value="0" aria-label="Elapsed conversation time"></progress></div><div class="metrics"><div class="metric"><svg class="msg-icon" aria-hidden="true"><use href="#msg-icon-cycle"/></svg><div><strong id="rt-requests">1</strong><span>requests / handshakes</span></div></div><div class="metric"><svg class="msg-icon" aria-hidden="true"><use href="#msg-icon-clock"/></svg><div><strong id="rt-wait">—</strong><span>last update’s app wait</span></div></div></div></div>
+      <div class="rt-caption"><div class="label" id="rt-step-label">Story begins · 0 s</div><h3 id="rt-event-title">Open the conversation.</h3><p id="rt-status" role="status">Press Play or Next event. Quiet seconds are skipped; compare when the shop’s news becomes visible.</p></div>
+      <div class="rt-scene">
+        <div class="rt-endpoint" id="rt-browser-endpoint"><div class="endpoint-header"><span class="endpoint-avatar" aria-hidden="true"><svg class="msg-icon"><use href="#msg-icon-browser"/></svg></span><div class="endpoint-heading"><h3>Your browser</h3><p>Conversation · latest 4 messages</p></div><span class="message-count" id="rt-browser-count" aria-label="Messages shown in the browser">0</span></div><div class="endpoint-address">shop.example · order chat</div><ol class="rt-inbox" id="rt-browser-inbox" aria-label="Your conversation with the shop"><li class="empty">No messages yet.</li></ol><p class="endpoint-footer" id="rt-browser">No browser messages sent.</p></div>
+        <div class="rt-channel"><span class="channel-badge" id="rt-channel-badge" data-state="request">Polling</span><p id="rt-channel-label">Repeated HTTP requests</p><div class="rt-track" id="rt-track" data-flow="idle" aria-hidden="true"><span class="rt-token">HTTP</span></div><p id="rt-flow-label">Browser asks → server answers</p><div class="rt-countdown" id="rt-countdown"><label for="rt-poll-progress" id="rt-poll-label">Next poll in 5 s</label><progress id="rt-poll-progress" max="5" value="0"></progress></div></div>
+        <div class="rt-endpoint" id="rt-server-endpoint"><div class="endpoint-header"><span class="endpoint-avatar" aria-hidden="true"><svg class="msg-icon"><use href="#msg-icon-server"/></svg></span><div class="endpoint-heading"><h3>Shop server</h3><p>Incoming from your browser</p></div><span class="message-count" id="rt-server-count" aria-label="Messages shown at the server">0</span></div><div class="endpoint-address">Message service · simulated</div><ol class="rt-inbox" id="rt-server-inbox" aria-label="Browser messages received by the server"><li class="empty">No browser messages received yet.</li></ol><div class="server-outbox"><div class="outbox-heading"><svg class="msg-icon" aria-hidden="true"><use href="#msg-icon-send"/></svg><span>Outgoing update queue</span><span class="message-count" id="rt-pending-count" aria-label="Updates waiting for delivery">0</span></div><p class="rt-pending" id="rt-pending">No updates waiting to be sent.</p><ol class="queue-messages" id="rt-queue-messages" aria-label="Updates waiting to be delivered" hidden></ol></div><p class="endpoint-footer" id="rt-server">No server updates created.</p></div>
+      </div>
+      <details class="js-only" id="rt-custom"><summary>Try your own messages</summary><p class="small">Send to pause and insert now. Next event continues; Restart clears additions.</p><div class="two" style="margin-top:var(--s-4)"><div class="control"><label for="rt-server-text">Shop’s update</label><input class="rt-custom-input" id="rt-server-text" type="text" maxlength="120" value="Your order is ready."><button type="button" id="rt-update"><svg class="msg-icon" aria-hidden="true"><use href="#msg-icon-send"/></svg>Send update</button></div><div class="control"><label for="rt-browser-text">Your message</label><input class="rt-custom-input" id="rt-browser-text" type="text" maxlength="120" value="Please add a receipt."><button type="button" id="rt-send"><svg class="msg-icon" aria-hidden="true"><use href="#msg-icon-send"/></svg>Send message</button></div></div></details>
+      <details><summary>Inspect the protocol log</summary><ol class="event-log" id="rt-log" aria-label="Recent messaging events"><li>GET /updates → no new messages. Next poll at 5 s.</li></ol><p class="small muted">Latest eight events. All earlier events remain part of the simulation.</p></details>
+      <p class="note">0 s wait means no app waiting—not zero network latency. This story models messaging patterns, not packet transit.</p>
+      <figcaption>Polling asks; SSE pushes; WebSocket sends both ways.</figcaption>
+    </figure>
+    <details><summary>How the patterns work &amp; model notes</summary>
+      <p id="rt-description">Polling asks every five seconds. Updates wait for the next request.</p>
+      <p>Polling asks for news; SSE pushes server events, with browser replies using separate HTTP requests; WebSocket lets both sides send on one channel. Messages are not individual packets.</p>
+      <p>The shop creates news at 1 s. Polling receives it at 5 s: four seconds of application waiting. SSE and WebSocket receive it at 1 s in this model because transit and processing are omitted. Switching patterns preserves the same moment.</p>
+      <p>Playback advances one meaningful event per beat, skipping quiet seconds. The same checkpoints are used for every pattern: messages at 1, 2, 6, and 7 s, plus polling times at 5 and 10 s. Polling times remain visible when comparing an open channel. Tokens show direction, not speed. Transit and processing are omitted to isolate app waiting.</p><p>Classic WebSocket uses TCP: missing earlier bytes can delay later messages. WebSocket adds framing; <code>wss://</code> adds TLS protection.</p><p>A separate HTTP request need not create a new physical connection. All patterns need connection management; reconnecting does not guarantee replay. Long polling—holding a request until news or timeout—is another option.</p></details>
+  </section>
+
+  <footer>
+    <details class="guide-sources"><summary>Sources &amp; scope</summary>
+      <ul class="sources">
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Connection_management_in_HTTP_1.x">MDN — HTTP connection management</a></li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events">MDN — Server-Sent Events</a></li>
+        <li><a href="https://www.rfc-editor.org/rfc/rfc6455">IETF RFC 6455 — WebSocket</a></li>
+        <li><a href="https://www.rfc-editor.org/rfc/rfc9293">IETF RFC 9293 — TCP</a></li>
+      </ul>
+      <p class="small muted">AI-generated learning aid. Simulated locally; no demo traffic is sent. Verify important details with authoritative sources.</p>
+    </details>
+  </footer>
+</main>
+<script src="assets/network-model.js"></script>
+<script src="assets/messaging-guide.js"></script>
+<script src="assets/guide-layout.js"></script>
+</body>
+</html>

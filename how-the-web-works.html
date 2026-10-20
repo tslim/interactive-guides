@@ -54,15 +54,41 @@
     .step-links a[aria-disabled="true"] { color: var(--text-dim); border-style: dashed; }
     #journey { margin-top: var(--s-5); }
     .workspace { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); border: 1px solid var(--border); border-radius: var(--r-2); background: var(--surface); }
-    .browser { align-self: start; position: sticky; top: calc(var(--web-nav-height,7rem) + 1rem); }
-    .browser-bar { padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); background: var(--bg); border-radius: var(--r-2) 0 0 0; font: var(--t-label)/1.6 var(--mono); }
-    .address-bar { margin-top: var(--s-2); overflow-wrap: anywhere; }
+    .browser { align-self: start; position: sticky; top: calc(var(--web-nav-height,7rem) + 1rem); margin: var(--s-4); border: 1px solid var(--border-bright); border-radius: var(--r-2); overflow: hidden; box-shadow: 0 3px 12px var(--lift); }
+    .browser-icon { width: 1rem; height: 1rem; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .browser-tabs { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-3) 0; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .browser-window-dots { display: flex; gap: 3px; padding-bottom: var(--s-2); }
+    .browser-window-dots i { width: 6px; height: 6px; border: 1px solid var(--border-bright); border-radius: 50%; }
+    .browser-tab { display: flex; align-items: center; gap: var(--s-2); flex: 1; padding: var(--s-2); margin-bottom: -1px; border: 1px solid var(--border); border-bottom-color: var(--surface); border-radius: var(--r-1) var(--r-1) 0 0; background: var(--surface); font-size: var(--t-label); }
+    .browser-tab > .browser-icon:first-child { color: var(--accent); }
+    #browser-tab-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .browser-tab > .tab-close { width: .75rem; height: .75rem; color: var(--text-dim); }
+    .browser-simulation { align-self: center; padding-bottom: var(--s-2); color: var(--text-dim); font: var(--t-label)/1.4 var(--mono); }
+    .browser-bar { padding: var(--s-3); background: var(--surface); font: var(--t-label)/1.6 var(--mono); }
+    .browser-toolbar { display: flex; align-items: center; gap: var(--s-2); }
+    .browser-navigation { display: flex; gap: var(--s-2); color: var(--text-dim); opacity: .65; pointer-events: none; }
+    .address-bar { display: flex; align-items: center; gap: var(--s-2); flex: 1; padding: var(--s-1) var(--s-2); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--bg); }
+    .address-text { flex: 1; overflow-wrap: anywhere; }
+    .ready #interactive-url { display: flex; flex-wrap: wrap; align-items: center; }
+    .connection-icon { display: inline-flex; color: var(--text-dim); }
+    .connection-icon[data-state="secure"] { color: var(--ok); }
+    .connection-icon[data-state="blocked"] { color: var(--risk); }
     .url-part { padding: var(--s-1) 0; min-height: 2rem; border: 0; background: none; font: inherit; }
     .url-part[aria-pressed="true"] { text-decoration: underline; text-underline-offset: .3em; color: var(--accent); }
-    #browser-state { display: block; margin-top: var(--s-2); color: var(--text-dim); }
-    .preview { min-height: 23rem; padding: var(--s-5); }
-    .preview-wait { display: grid; align-content: center; min-height: 18rem; gap: var(--s-3); color: var(--text-dim); }
+    .browser-statusline { display: flex; align-items: baseline; gap: var(--s-2); margin-top: var(--s-2); color: var(--text-dim); font: var(--t-label)/1.5 var(--body); }
+    .browser-status-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: var(--accent); }
+    .browser[data-state="ready"] .browser-status-dot { background: var(--ok); }
+    .browser[data-state="blocked"] .browser-status-dot { background: var(--risk); }
+    .browser[data-state="http-error"] .browser-status-dot { background: var(--warn); }
+    #browser-progress { display: block; width: 100%; height: 3px; border: 0; accent-color: var(--accent); }
+    .browser[data-state="blocked"] #browser-progress { accent-color: var(--risk); }
+    .browser[data-state="http-error"] #browser-progress { accent-color: var(--warn); }
+    .preview { min-height: 21rem; padding: var(--s-4); }
+    .preview-wait { display: grid; align-content: center; justify-items: start; min-height: 17rem; gap: var(--s-3); color: var(--text-dim); }
     .preview-wait strong { font-size: var(--t-lead); color: var(--text); }
+    .preview-state-icon { width: 2.5rem; height: 2.5rem; color: var(--text-dim); }
+    .browser[data-state="blocked"] .preview-state-icon { color: var(--risk); }
+    .browser-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-2); padding: var(--s-2) var(--s-3); background: var(--bg); border-top: 1px solid var(--border); color: var(--text-dim); font: var(--t-label)/1.5 var(--body); }
     .garden { font-family: Georgia, serif; }
     .garden h3 { font: 600 1.35rem/1.3 Georgia,serif; }
     .garden.styled { font-family: var(--body); }
@@ -93,7 +119,8 @@
       .journey-nav-inner { padding-inline: var(--s-4); }
       .workspace { grid-template-columns: minmax(0,1fr); }
       .browser { position: static; }
-      .browser-bar { border-radius: var(--r-2) var(--r-2) 0 0; }
+      .browser-navigation { display: none; }
+      .browser-window-dots { display: none; }
       .preview { min-height: 0; padding: var(--s-4); }
       .preview-wait { min-height: 7rem; }
       .inspector { border-left: 0; border-top: 1px solid var(--border); padding: var(--s-4); }
@@ -115,6 +142,16 @@
   <link rel="stylesheet" href="assets/shared.css">
 </head>
 <body>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+  <symbol id="web-icon-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18 M12 3c5 5 5 13 0 18 M12 3c-5 5-5 13 0 18"/></symbol>
+  <symbol id="web-icon-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3 M12 14v3"/></symbol>
+  <symbol id="web-icon-warning" viewBox="0 0 24 24"><path d="m12 3 10 18H2Z M12 9v5 M12 17h.01"/></symbol>
+  <symbol id="web-icon-page" viewBox="0 0 24 24"><path d="M14 2H5v20h14V7Z M14 2v5h5 M8 12h8 M8 16h6"/></symbol>
+  <symbol id="web-icon-back" viewBox="0 0 24 24"><path d="m12 5-7 7 7 7 M5 12h15"/></symbol>
+  <symbol id="web-icon-forward" viewBox="0 0 24 24"><path d="m12 5 7 7-7 7 M19 12H4"/></symbol>
+  <symbol id="web-icon-reload" viewBox="0 0 24 24"><path d="M20 8A9 9 0 1 0 21 14 M20 3v5h-5"/></symbol>
+  <symbol id="web-icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12 M18 6 6 18"/></symbol>
+</defs></svg>
 <a class="skip-link" href="#main">Skip to guide</a>
 <nav class="site-nav" aria-label="Collection"><div class="site-nav-inner"><a class="site-home" href="index.html">← Interactive Guides</a></div></nav>
 <nav class="journey-nav" aria-label="Browser journey">
@@ -139,13 +176,17 @@
   </header>
   <section id="journey" aria-label="Follow a browser visit">
     <div class="workspace">
-      <div class="browser" aria-label="Simulated browser">
+      <div class="browser" role="group" aria-label="Simulated browser" data-state="pending">
+        <div class="browser-tabs"><span class="browser-window-dots" aria-hidden="true"><i></i><i></i><i></i></span><div class="browser-tab"><svg class="browser-icon" aria-hidden="true"><use id="browser-tab-icon" href="#web-icon-globe"/></svg><span id="browser-tab-title">garden.example</span><svg class="browser-icon tab-close" aria-hidden="true"><use href="#web-icon-close"/></svg></div><span class="browser-simulation">Simulation</span></div>
         <div class="browser-bar">
-          <strong>Simulated browser · no real requests</strong>
-          <div class="address-bar" aria-label="Example address"><span id="static-url">https://garden.example/plants</span><span class="js-only" id="interactive-url"><button type="button" class="url-part" data-url-part="scheme" aria-pressed="true" aria-label="Inspect HTTPS scheme">https://</button><button type="button" class="url-part" data-url-part="host" aria-pressed="false" aria-label="Inspect hostname">garden.example</button><button type="button" class="url-part" data-url-part="path" aria-pressed="false" id="url-path-part" aria-label="Inspect requested path">/plants</button></span></div>
-          <span id="browser-state">An address, not a page yet</span>
+          <div class="browser-toolbar"><span class="browser-navigation" aria-hidden="true"><svg class="browser-icon"><use href="#web-icon-back"/></svg><svg class="browser-icon"><use href="#web-icon-forward"/></svg><svg class="browser-icon"><use href="#web-icon-reload"/></svg></span>
+            <div class="address-bar" aria-label="Example address"><span id="browser-connection" class="connection-icon" role="img" aria-label="Not connected" data-state="pending"><svg class="browser-icon" aria-hidden="true"><use id="browser-connection-icon" href="#web-icon-globe"/></svg></span><div class="address-text"><span id="static-url">https://garden.example/plants</span><span class="js-only" id="interactive-url"><button type="button" class="url-part" data-url-part="scheme" aria-pressed="true" aria-label="Inspect HTTPS scheme">https://</button><button type="button" class="url-part" data-url-part="host" aria-pressed="false" aria-label="Inspect hostname">garden.example</button><button type="button" class="url-part" data-url-part="path" aria-pressed="false" id="url-path-part" aria-label="Inspect requested path">/plants</button></span></div></div>
+          </div>
+          <div class="browser-statusline"><span class="browser-status-dot" aria-hidden="true"></span><span id="browser-state" role="status" aria-atomic="true">An address, not a page yet</span></div>
         </div>
-        <div class="preview" id="browser-preview"><div class="preview-wait"><strong>A page starts with a request.</strong><span>DNS finds the server, HTTPS secures the connection, and HTTP carries the resources the browser displays.</span></div></div>
+        <progress id="browser-progress" max="6" value="1" aria-label="Browser journey step progress"></progress>
+        <div class="preview" id="browser-preview"><div class="preview-wait"><svg class="browser-icon preview-state-icon" aria-hidden="true"><use href="#web-icon-globe"/></svg><strong>A page starts with a request.</strong><span>DNS finds the server, HTTPS secures the connection, and HTTP carries the resources the browser displays.</span></div></div>
+        <div class="browser-footer"><span id="browser-connection-label">Not connected</span><span>No real requests</span></div>
       </div>
       <div class="inspector">
         <section id="address" data-journey-step aria-labelledby="address-title">
@@ -218,7 +259,7 @@ Server checks session → HTML with a personal greeting</pre><p>The greeting com
 /plant.svg  200 OK
 /app.js     200 OK</pre>
           <div class="experiment js-only" id="resource-controls"><span class="label">Try it · change how resources load</span><label class="check"><input id="resources-cached" type="checkbox"> Fresh resources already in the browser cache</label><label class="check"><input id="load-css" type="checkbox" checked> Load CSS · presentation</label><label class="check"><input id="load-js" type="checkbox" checked> Load JavaScript · button behavior</label><label class="check"><input id="missing-image" type="checkbox"> Image request returns 404</label></div>
-          <p class="takeaway">A missing image need not break the page.</p>
+          <p class="takeaway">Even a 404 or 500 page can load resources. A missing image need not break the rest of it.</p>
           <details><summary>What makes a repeat visit faster—or out of date?</summary><p>The browser can reuse fresh cached resources instead of downloading them again. A stale response can sometimes be validated; <code>304 Not Modified</code> lets it reuse the cached body.</p><p>The toggle changes only the public CSS, image, and script. A fresh cache hit means no network request for that resource; the page looks the same. A missing-image experiment assumes no usable cached image, so that request still returns 404. DNS caching is separate, in step 2. The HTML is always fetched here, with <code>Cache-Control: private, no-store</code>, so personalized content is not reused between visitors. Cache behavior depends on headers and browser state. <code>Cache-Control: no-cache</code> means validate before reuse, not “never store.”</p></details>
         </section>
         <section id="rendering" data-journey-step aria-labelledby="rendering-title">

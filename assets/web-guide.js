@@ -5,7 +5,7 @@
   const panels = [...document.querySelectorAll('[data-journey-step]')];
   const links = [...document.querySelectorAll('[data-step]')];
   const names = ['Read the URL', 'Find the server', 'Connect securely', 'Request the page', 'Load resources', 'Use the page'];
-  const defaults = () => ({ step: 0, path: '/plants', dnsCached: false, dnsFailure: false, invalidCert: false, slow: false, css: true, js: true, missingImage: false, cached: false, signedIn: false, watered: false });
+  const defaults = () => ({ step: 0, path: '/plants', dnsCached: false, dnsFailure: false, invalidCert: false, slow: false, css: true, js: true, missingImage: false, cached: false, signedIn: false, watered: false, helpShown: false });
   let state = defaults();
   let urlPart = 'scheme';
   const responses = {
@@ -38,55 +38,79 @@
     $('connection-description').textContent = state.invalidCert ? 'TCP connected, but the certificate does not cover garden.example. This model stops rather than sending HTTP to an unverified endpoint.' : 'This visit opens a TCP connection, then uses TLS to check the server’s identity and establish encryption keys.';
     $('connection-wire').textContent = state.invalidCert ? 'TCP: connected\nTLS: hostname mismatch\nHTTP request: not sent' : 'TCP: SYN → SYN + ACK → ACK\nTLS: certificate checks + encryption keys\nHTTP/2 connection ready';
     $('http-description').textContent = 'The browser requests ' + state.path + '. The server returns ' + response.code + ' ' + response.reason + ', headers, and HTML. ' + (successfulPage() ? (state.signedIn ? 'It recognizes the session cookie and includes a personal greeting in the HTML.' : 'Without a session cookie, it returns the guest version of this public page.') : 'A session cookie does not make a missing or broken resource succeed.');
-    $('http-wire').textContent = 'GET ' + state.path + '\nHost: garden.example\nAccept: text/html\n' + (state.signedIn ? 'Cookie: demo_session=demo-7' : '[No session cookie]') + '\n\nResponse: ' + response.code + ' ' + response.reason + '\nContent-Type: text/html\nCache-Control: private, no-store\n\n<h1>' + response.title + '</h1>' + (successfulPage() ? '\n<p>' + greeting() + '</p>\n<link rel="stylesheet" href="/style.css">' : '\n<p>' + response.body + '</p>');
+    $('http-wire').textContent = 'GET ' + state.path + '\nHost: garden.example\nAccept: text/html\n' + (state.signedIn ? 'Cookie: demo_session=demo-7' : '[No session cookie]') + '\n\nResponse: ' + response.code + ' ' + response.reason + '\nContent-Type: text/html\nCache-Control: private, no-store\n\n<h1>' + response.title + '</h1>' + (successfulPage() ? '\n<p>' + greeting() + '</p>' : '\n<p>' + response.body + '</p>') + '\n<link rel="stylesheet" href="/style.css">\n<img src="/plant.svg" alt="A growing plant">\n<script src="/app.js"></script>';
     $('session-note').textContent = state.signedIn ? 'Assume an earlier successful sign-in: the browser has a cookie, and the server accepts its session ID. The cookie is sent with this request.' : 'Guest visit: no session cookie. The server returns the guest version of the public page.';
     $('server-timing').textContent = 'Illustrative response wait: ' + (state.slow ? '1,800' : '160') + ' ms.';
-    $('resources-description').textContent = !successfulPage() ? 'This server’s error document is self-contained. There are no extra resources here; real error pages may still load CSS, images, and scripts.' : (state.cached ? 'Fresh cached resources are reused without network requests. The page looks the same.' + (state.missingImage ? ' The image has no usable cached copy, so its request still returns 404.' : '') : 'The browser fetches the CSS, image, and JavaScript referenced by the HTML, often concurrently.') + ' These public assets are the same for guests and signed-in users; the HTML was fetched separately.';
+    $('resources-description').textContent = (successfulPage() ? '' : 'This ' + response.code + ' error page also references CSS, an image, and JavaScript. Its HTTP status stays ' + response.code + '. ') + (state.cached ? 'Fresh cached resources are reused without network requests. The page looks the same.' + (state.missingImage ? ' The image has no usable cached copy, so its request still returns 404.' : '') : 'The browser fetches the referenced CSS, image, and JavaScript, often concurrently.') + ' These public assets are shared by the normal and error pages; the HTML was fetched separately.';
     const asset = enabled => !enabled ? 'not loaded · disabled in demo' : state.cached ? 'fresh browser cache · no request' : 'GET → 200 OK';
-    $('resources-wire').textContent = !successfulPage() ? 'No referenced resources\nAn HTTP error can still return HTML' : '/style.css  ' + asset(state.css) + '\n/plant.svg  ' + (state.missingImage ? '404 Not Found' : asset(true)) + '\n/app.js     ' + asset(state.js);
-    $('resource-controls').querySelectorAll('input').forEach(input => { input.disabled = !successfulPage(); });
-    $('rendering-description').textContent = !successfulPage() ? 'The browser displays the server’s error HTML like any other document. This is a server answer—not a browser-generated DNS or TLS warning.' : 'The browser parses HTML' + (state.css ? ', applies CSS, lays out elements, and paints pixels.' : ', uses default styles, lays out elements, and paints pixels.') + (state.js ? ' JavaScript handles the garden’s watering button. Try it in the browser.' : ' The garden’s custom button does not respond because its script was not loaded.');
-    $('rendering-wire').textContent = !successfulPage() ? response.code + ' ' + response.reason + '\nError HTML → document tree → pixels' : 'HTML → document tree\n' + (state.css ? 'CSS → styles and layout → paint' : 'No stylesheet → browser default presentation') + '\n' + (state.js ? 'JavaScript → click handler' : 'No script → no custom click handler');
+    $('resources-wire').textContent = '/style.css  ' + asset(state.css) + '\n/plant.svg  ' + (state.missingImage ? '404 Not Found' : asset(true)) + '\n/app.js     ' + asset(state.js);
+    $('rendering-description').textContent = (successfulPage() ? '' : 'The browser renders the ' + response.code + ' error document like any other HTML page. ') + 'It parses HTML' + (state.css ? ', applies CSS, lays out elements, and paints pixels.' : ', uses default styles, lays out elements, and paints pixels.') + (state.js ? ' JavaScript handles the ' + (successfulPage() ? 'watering' : 'help') + ' button. Try it in the browser.' : ' The custom button does not respond because its script was not loaded.');
+    $('rendering-wire').textContent = (successfulPage() ? '' : 'HTTP status: ' + response.code + ' ' + response.reason + '\n') + 'HTML → document tree\n' + (state.css ? 'CSS → styles and layout → paint' : 'No stylesheet → browser default presentation') + '\n' + (state.js ? 'JavaScript → click handler' : 'No script → no custom click handler');
     updateURLPart();
   }
 
-  function previewMessage(title, text) {
+  function previewMessage(title, text, icon = 'globe') {
     const box = document.createElement('div'); box.className = 'preview-wait';
+    const picture = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    picture.setAttribute('class', 'browser-icon preview-state-icon'); picture.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use'); use.setAttribute('href', '#web-icon-' + icon); picture.append(use);
     const heading = document.createElement('strong'); heading.textContent = title;
     const body = document.createElement('span'); body.textContent = text;
-    box.append(heading, body); $('browser-preview').replaceChildren(box);
+    box.append(picture, heading, body); $('browser-preview').replaceChildren(box);
   }
   function renderPreview() {
     const step = state.step;
     let status;
     if (state.dnsFailure && step >= 1) {
       status = 'Stopped · DNS failure';
-      previewMessage('Address not found', 'Browser-generated error. There is no HTTP status: the web server did not answer.');
+      previewMessage('Address not found', 'Browser-generated error. There is no HTTP status: the web server did not answer.', 'warning');
     } else if (state.invalidCert && step >= 2) {
       status = 'Stopped · certificate rejected';
-      previewMessage('Connection stopped', 'Browser-generated warning. The certificate does not cover garden.example. No HTTP request was sent.');
+      previewMessage('Connection stopped', 'Browser-generated warning. The certificate does not cover garden.example. No HTTP request was sent.', 'warning');
     } else if (step < 3) {
       const titles = ['An address, not a page yet', 'Finding the server', 'Preparing a secure connection'];
       status = titles[step];
       previewMessage(titles[step], 'No HTML response has arrived yet.');
-    } else if (!successfulPage()) {
-      const response = responses[state.path]; status = response.code + ' ' + response.reason + ' · server response';
-      previewMessage(response.code + ' · ' + response.title, response.body);
     } else {
+      const response = responses[state.path], success = successfulPage();
       const assets = step >= 4, interactive = step >= 5 && state.js;
-      status = step === 3 ? 'HTML received · default presentation' : step === 4 ? (state.cached ? 'Resources reused from cache' : 'Resources loaded') : 'Page ready · ' + (state.js ? 'try the watering button' : 'custom script not loaded');
-      $('browser-preview').innerHTML = '<div class="garden' + (assets && state.css ? ' styled' : '') + '"><p class="garden-account" id="page-identity">' + greeting() + '</p><div class="garden-label">Garden notes</div><h3>Your small garden</h3><p>Three small ways to help your plants thrive.</p>' +
+      const help = response.code === 404 ? 'Check the path: this resource does not exist. Try another page in the request step.' : 'The server encountered a problem. A styled error page does not mean the request succeeded.';
+      const buttonId = success ? 'journey-water' : 'journey-help';
+      status = (success ? '' : response.code + ' ' + response.reason + ' · ') + (step === 3 ? 'HTML received · default presentation' : step === 4 ? (state.cached ? 'Resources reused from cache' : 'Resources loaded') : 'Page ready · ' + (state.js ? 'try the ' + (success ? 'watering' : 'help') + ' button' : 'custom script not loaded'));
+      $('browser-preview').innerHTML = '<div class="garden' + (assets && state.css ? ' styled' : '') + '">' + (success ? '<p class="garden-account" id="page-identity">' + greeting() + '</p>' : '') + '<div class="garden-label">Garden notes</div><h3>' + (success ? response.title : response.code + ' · ' + response.title) + '</h3><p>' + response.body + '</p>' +
         (assets ? (state.missingImage ? '<div class="image-failed">Image unavailable · /plant.svg returned 404</div>' : plantArt) : '') +
-        '<p class="garden-info">Give it light. Check the soil. Water when needed.</p><button type="button" id="journey-water"' + (interactive ? '' : ' disabled') + '>' + (state.watered ? 'Watered! ✓' : 'Water the plant') + '</button><p class="small muted" style="margin-top:var(--s-2)">' + (interactive ? 'The script handles this button’s click.' : step === 4 && state.js ? 'The script is loaded. Activate its click handler in the next step.' : 'The button’s script is not active.') + '</p></div>';
-      $('journey-water').addEventListener('click', event => { state.watered = true; event.currentTarget.textContent = 'Watered! ✓'; });
+        '<p class="garden-info">' + (success ? 'Give it light. Check the soil. Water when needed.' : 'This error document can load the same resources as a successful page.') + '</p><button type="button" id="' + buttonId + '"' + (interactive ? '' : ' disabled') + (success ? '' : ' aria-controls="journey-help-text" aria-expanded="' + String(interactive && state.helpShown) + '"') + '>' + (success ? (state.watered ? 'Watered! ✓' : 'Water the plant') : interactive && state.helpShown ? 'Hide help' : 'Show help') + '</button>' + (success ? '' : '<p id="journey-help-text"' + (interactive && state.helpShown ? '' : ' hidden') + '>' + help + '</p>') + '<p class="small muted" style="margin-top:var(--s-2)">' + (interactive ? 'The script handles this button’s click.' : step === 4 && state.js ? 'The script is loaded. Activate its click handler in the next step.' : 'The button’s script is not active.') + '</p></div>';
+      $(buttonId).addEventListener('click', event => {
+        if (success) { state.watered = true; event.currentTarget.textContent = 'Watered! ✓'; }
+        else { state.helpShown = !state.helpShown; event.currentTarget.textContent = state.helpShown ? 'Hide help' : 'Show help'; event.currentTarget.setAttribute('aria-expanded', String(state.helpShown)); $('journey-help-text').hidden = !state.helpShown; }
+      });
     }
     $('browser-state').textContent = status;
     $('url-path-part').textContent = state.path;
     $('static-url').textContent = 'https://garden.example' + state.path;
   }
 
+  function renderBrowserChrome() {
+    const response = responses[state.path];
+    const dnsFailed = state.dnsFailure && state.step >= 1;
+    const certFailed = state.invalidCert && state.step >= 2;
+    const secure = state.step >= 2 && !dnsFailed && !certFailed;
+    const blocked = dnsFailed || certFailed;
+    const connection = blocked ? 'blocked' : secure ? 'secure' : 'pending';
+    const label = dnsFailed ? 'No connection · DNS failure' : certFailed ? 'Certificate rejected · HTTP not sent' : secure ? 'TLS established · encrypted connection' : 'Not connected · HTTPS requested';
+    $('browser-connection').dataset.state = connection;
+    $('browser-connection').setAttribute('aria-label', label); $('browser-connection').title = label;
+    $('browser-connection-icon').setAttribute('href', '#web-icon-' + (blocked ? 'warning' : secure ? 'lock' : 'globe'));
+    $('browser-connection-label').textContent = label;
+    $('browser-tab-title').textContent = dnsFailed ? 'Address not found' : certFailed ? 'Connection stopped' : state.step >= 3 ? response.title : 'garden.example';
+    $('browser-tab-icon').setAttribute('href', '#web-icon-' + (blocked ? 'warning' : state.step >= 3 ? 'page' : 'globe'));
+    document.querySelector('.browser').dataset.state = blocked ? 'blocked' : state.step < 3 ? 'pending' : !successfulPage() ? 'http-error' : state.step === 5 ? 'ready' : 'loading';
+    $('browser-progress').value = state.step + 1;
+    $('browser-progress').setAttribute('aria-valuetext', 'Journey step ' + (state.step + 1) + ' of 6' + (blocked ? '; visit stopped' : ''));
+  }
+
   function renderTimeline() {
-    const durations = [0, state.dnsCached && !state.dnsFailure ? 1 : 120, 180, state.slow ? 1800 : 160, successfulPage() ? (state.cached && !state.missingImage ? 0 : 120) : 0, 35];
+    const durations = [0, state.dnsCached && !state.dnsFailure ? 1 : 120, 180, state.slow ? 1800 : 160, state.cached && !state.missingImage ? 0 : 120, 35];
     let elapsed = 0;
     $('timeline-rows').replaceChildren();
     names.forEach((name, index) => {
@@ -116,7 +140,7 @@
     $('next').textContent = state.step === terminalStep() ? (terminalStep() < 5 ? 'Visit stopped · change the experiment' : 'Page ready') : 'Next step →';
     $('journey-position').textContent = (state.step + 1) + ' / 6';
     $('journey-status').textContent = 'Step ' + (state.step + 1) + ' of 6 · ' + names[state.step] + '.' + (state.step === terminalStep() && terminalStep() < 5 ? ' Visit stopped. Clear the failure checkbox to continue.' : '');
-    renderExplanations(); renderPreview(); renderTimeline();
+    renderExplanations(); renderPreview(); renderBrowserChrome(); renderTimeline();
     window.GuidePresentation?.refresh();
   }
 
@@ -163,10 +187,10 @@
     // A usable local answer and a failed resolution are alternative outcomes.
     if (key === 'dnsCached' && state.dnsCached) state.dnsFailure = false;
     if (key === 'dnsFailure' && state.dnsFailure) state.dnsCached = false;
-    if (key === 'js') state.watered = false;
+    if (key === 'js') { state.watered = false; state.helpShown = false; }
     render(); writeHash(true);
   }));
-  $('path').addEventListener('change', event => { state.path = event.target.value; state.watered = false; render(); });
+  $('path').addEventListener('change', event => { state.path = event.target.value; state.watered = false; state.helpShown = false; render(); });
   document.querySelectorAll('[data-url-part]').forEach(button => button.addEventListener('click', () => {
     urlPart = button.dataset.urlPart; show(0);
   }));

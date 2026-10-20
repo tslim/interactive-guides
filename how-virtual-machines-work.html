@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="See how processes, containers, and virtual machines isolate work. Trace a file request and compare simulated failure boundaries.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <title>How processes, containers, and virtual machines isolate work — Interactive Guides</title>
+  <style>
+    main { max-width: 64rem; margin: auto; padding: var(--s-5); }
+    h1, h2, h3, p, figure { margin: 0; }
+    main h1 { font-size: clamp(1.75rem, 3.5vw, 2.5rem); margin-bottom: var(--s-3); }
+    h2, h3 { font-size: var(--t-lead); }
+    main > header { margin-bottom: var(--s-5); }
+    .subtitle, .note, figcaption, .stack-summary { color: var(--text-dim); }
+    .subtitle { max-width: 70ch; }
+    .note, figcaption, .stack-summary, details { font-size: var(--t-small); }
+    .label { font: var(--t-label)/1.5 var(--mono); color: var(--text-dim); }
+    .environment-dock { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .environment-options { max-width: 64rem; margin: auto; padding: var(--s-3) var(--s-5); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }
+    .environment-options button { display: flex; align-items: center; justify-content: center; gap: var(--s-2); min-width: 0; font-family: var(--body); }
+    .vm-icon { width: 1.15rem; height: 1.15rem; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 -3px var(--accent); }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); padding: var(--s-4); }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+    .playback { margin-block: var(--s-3) var(--s-4); }
+    .playback output { font: var(--t-label)/1.5 var(--mono); color: var(--text-dim); margin-left: auto; }
+    .playback .primary { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    @media (prefers-color-scheme: dark) { .playback .primary { color: var(--bg); } }
+    #vm-player-progress { width: 100%; height: .5rem; accent-color: var(--accent); margin-bottom: var(--s-4); }
+    #vm-stacks { display: grid; gap: var(--s-5); }
+    .stack-summary { margin-top: var(--s-2); }
+    .machine-case { margin-top: var(--s-3); border: 1px solid var(--border-bright); border-radius: var(--r-2); background: var(--bg); overflow: hidden; }
+    .machine-header { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-3); border-bottom: 1px solid var(--border); color: var(--text-dim); font-size: var(--t-small); background: var(--surface); }
+    .machine-header strong { color: var(--text); font-weight: 600; }
+    .machine-header span { margin-left: auto; font-size: var(--t-label); }
+    .stack-scope { padding: var(--s-3); margin: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); }
+    .stack-scope.isolated { border-style: dashed; border-color: var(--accent); }
+    .scope-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--s-1) var(--s-2); margin-bottom: var(--s-2); }
+    .scope-label { font: 600 var(--t-label)/1.5 var(--body); color: var(--text-dim); }
+    .isolated .scope-label { color: var(--accent); }
+    .scope-detail { margin-left: auto; font-size: var(--t-label); color: var(--text-dim); }
+    .process-shell { padding: var(--s-2); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--bg); }
+    .process-shell > .label { display: block; margin-bottom: var(--s-2); }
+    .process-view { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); overflow: hidden; background: var(--surface); }
+    .view-heading { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-1) var(--s-2); padding: var(--s-2); border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); background: var(--bg); }
+    .view-heading strong { color: var(--text); }
+    .view-heading span { margin-left: auto; }
+    .process-table { width: 100%; border-collapse: collapse; font: var(--t-label)/1.5 var(--mono); }
+    .process-table th, .process-table td { padding: var(--s-1) var(--s-2); text-align: left; border-bottom: 1px solid var(--border); }
+    .process-table th { color: var(--text-dim); font-weight: 400; }
+    .process-table .this-app { color: var(--accent); font-weight: 600; }
+    .process-table .neighbor { color: var(--text-dim); }
+    .view-properties { margin: 0; padding: var(--s-2); display: grid; gap: var(--s-2); font-size: var(--t-label); }
+    .view-properties div { display: grid; grid-template-columns: 3rem minmax(0,1fr); gap: var(--s-2); }
+    .view-properties dt { color: var(--text-dim); }
+    .view-properties dd { margin: 0; overflow-wrap: anywhere; }
+    .view-properties code { font-size: inherit; }
+    .namespace-note { margin-top: var(--s-2); color: var(--text-dim); font-size: var(--t-label); }
+    [data-view="container"] .view-heading, [data-view="vm"] .view-heading { border-left: 3px solid var(--accent); }
+    .guest-hardware { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--s-2); margin: 0; padding: var(--s-2); border-top: 1px solid var(--border); }
+    .guest-hardware > div { display: flex; flex-direction: column; min-width: 0; padding: var(--s-2) var(--s-1); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--bg); text-align: center; }
+    .guest-hardware dt { display: grid; justify-items: center; gap: var(--s-1); color: var(--text-dim); font-size: var(--t-label); }
+    .guest-hardware dd { margin: auto 0 0; padding-top: var(--s-1); font-size: var(--t-small); font-weight: 600; }
+    .view-properties dd strong { font-weight: 600; }
+    .stack { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s-3); }
+    .layer { position: relative; display: flex; gap: var(--s-3); align-items: center; padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+    .layer + .layer::before { content: '↓'; position: absolute; top: calc(-1 * var(--s-3) - 3px); left: 1.5rem; font: var(--t-label)/1 var(--mono); color: var(--text-dim); }
+    .layer-icon, .event-icon { display: grid; place-items: center; width: 2rem; height: 2rem; flex-shrink: 0; border: 1px solid var(--border); border-radius: var(--r-1); color: var(--text-dim); background: var(--bg); }
+    .layer-copy { flex: 1; min-width: 0; }
+    .layer strong, .layer small { display: block; }
+    .layer small { color: var(--text-dim); margin-top: var(--s-1); }
+    .vm-ready .layer:not([aria-current="step"]) small { display: none; }
+    .layer-number { display: grid; place-items: center; width: 1.4rem; height: 1.4rem; flex-shrink: 0; border: 1px solid var(--border); border-radius: 50%; color: var(--text-dim); font: var(--t-label)/1 var(--mono); }
+    .layer[data-phase="visited"] .layer-number { border-color: var(--ok); color: var(--ok); }
+    .layer[aria-current="step"] { border-color: var(--accent); box-shadow: inset 3px 0 var(--accent); }
+    .layer[aria-current="step"] .layer-icon, .layer[aria-current="step"] .layer-number { border-color: var(--accent); color: var(--accent); }
+    .layer-current { display: none; margin-top: var(--s-1); color: var(--accent); font: 600 var(--t-label)/1.4 var(--body); }
+    .layer[aria-current="step"] .layer-current { display: inline-block; }
+    .vm-ready .board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--s-5); }
+    .board > * { min-width: 0; }
+    .narration { align-self: start; padding: var(--s-4); margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-2); background: var(--bg); }
+    .vm-ready .narration { margin-top: 0; }
+    .event-heading { display: flex; gap: var(--s-3); align-items: center; margin-bottom: var(--s-3); }
+    .event-heading > div { min-width: 0; }
+    .event-icon { width: 2.5rem; height: 2.5rem; color: var(--accent); border-color: var(--accent); background: var(--surface); }
+    #vm-heading { margin-top: var(--s-1); }
+    #vm-description { min-height: 7rem; }
+    .failure-controls button { display: inline-flex; align-items: center; gap: var(--s-2); max-width: 100%; text-align: left; }
+    .failure-controls { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+    .failure-controls .label { flex: 0 0 100%; }
+    .result { padding: var(--s-3); margin-top: var(--s-3); border: 1px solid var(--warn); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+    .result-heading { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-2); color: var(--warn); font-weight: 600; }
+    figcaption { border-top: 1px solid var(--border); padding-top: var(--s-3); margin-top: var(--s-4); }
+    .takeaway { margin-top: var(--s-4); font-size: var(--t-small); }
+    details { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--border); }
+    summary { cursor: pointer; font-weight: 600; }
+    details p, details ul { margin-top: var(--s-3); }
+    details h3 { margin-top: var(--s-4); font-size: 1rem; }
+    details li + li { margin-top: var(--s-2); }
+    footer { margin-top: var(--s-5); }
+    .js-only { display: none; }
+    .vm-ready .js-only { display: block; }
+    .vm-ready .toolbar.js-only { display: flex; }
+    .skip-link { position: absolute; top: -5rem; left: var(--s-4); z-index: 20; padding: var(--s-3); background: var(--surface); }
+    .skip-link:focus { top: var(--s-3); }
+    [id] { scroll-margin-top: 6rem; }
+    @media (max-width: 700px) {
+      main { padding: var(--s-4); }
+      .environment-options { padding-inline: var(--s-4); }
+      .environment-options button { padding-inline: var(--s-1); font-size: var(--t-label); }
+      .vm-ready .board { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+      #vm-description { min-height: 0; }
+      .playback output { margin-left: 0; }
+    }
+    @media (max-width: 420px) {
+      .environment-options .vm-icon { display: none; }
+      .layer { gap: var(--s-2); padding: var(--s-2); }
+      .layer-icon { width: 1.75rem; height: 1.75rem; }
+      .stack-scope { padding: var(--s-2); margin: var(--s-2); }
+      .scope-detail { margin-left: 0; }
+    }
+    @media print {
+      main { max-width: none; padding: 0; }
+      .js-only, .vm-ready .js-only, .vm-ready .toolbar.js-only, .footer-meta, .skip-link { display: none !important; }
+      .vm-ready .board { display: block; }
+      #vm-stacks > [hidden] { display: block !important; }
+      #vm-stacks article { break-inside: avoid; }
+      .layer[aria-current="step"] { border: 1px solid var(--border); box-shadow: none; }
+      .layer[aria-current="step"] .layer-icon, .layer[data-phase] .layer-number { border-color: var(--border); color: var(--text-dim); }
+      .vm-ready .layer small { display: block !important; }
+      .layer-current, #vm-result { display: none !important; }
+      .narration { display: none; }
+      details::details-content { content-visibility: visible; }
+      details > :not(summary) { display: block !important; }
+    }
+  </style>
+  <link rel="stylesheet" href="assets/shared.css">
+</head>
+<body>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+  <symbol id="vm-icon-process" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 8h18 M7 12l3 2-3 2 M13 16h4"/></symbol>
+  <symbol id="vm-icon-container" viewBox="0 0 24 24"><path d="m12 3 9 5v9l-9 5-9-5V8Z M3 8l9 5 9-5 M12 13v9 M8 5l9 5"/></symbol>
+  <symbol id="vm-icon-vm" viewBox="0 0 24 24"><rect x="3" y="3" width="14" height="12" rx="1"/><rect x="8" y="9" width="13" height="12" rx="1"/></symbol>
+  <symbol id="vm-icon-kernel" viewBox="0 0 24 24"><path d="m9 3-1 3-3 1-2 4 2 2v4l4 3 3-1 3 1 4-3v-4l2-2-2-4-3-1-1-3Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="vm-icon-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 3v3 M15 3v3 M9 18v3 M15 18v3 M3 9h3 M3 15h3 M18 9h3 M18 15h3 M10 10h4v4h-4Z"/></symbol>
+  <symbol id="vm-icon-memory" viewBox="0 0 24 24"><path d="M3 6h18v11H3Z M6 17v3 M10 17v3 M14 17v3 M18 17v3 M6 9h4v5H6Z M14 9h4v5h-4Z"/></symbol>
+  <symbol id="vm-icon-driver" viewBox="0 0 24 24"><path d="M8 3v5 M16 3v5 M6 8h12v4a6 6 0 0 1-12 0Z M12 18v3 M3 21h9"/></symbol>
+  <symbol id="vm-icon-hardware" viewBox="0 0 24 24"><path d="M3 13h18v7H3Z M3 13l3-9h12l3 9 M7 17h.01 M11 17h6"/></symbol>
+  <symbol id="vm-icon-device" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2" stroke-dasharray="3 3"/><path d="M6 13h12v5H6Z M6 13l2-6h8l2 6 M9 16h.01 M12 16h3"/></symbol>
+  <symbol id="vm-icon-hypervisor" viewBox="0 0 24 24"><path d="m12 3 10 5-10 5L2 8Z M2 12l10 5 10-5 M2 16l10 5 10-5"/></symbol>
+  <symbol id="vm-icon-host" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="8" rx="1"/><rect x="3" y="13" width="18" height="8" rx="1"/><path d="M7 7h.01 M7 17h.01 M12 7h5 M12 17h5"/></symbol>
+  <symbol id="vm-icon-warning" viewBox="0 0 24 24"><path d="m12 3 10 18H2Z M12 9v5 M12 18h.01"/></symbol>
+  <symbol id="vm-icon-stop" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6 M15 9l-6 6"/></symbol>
+</defs></svg>
+<a class="skip-link" href="#main">Skip to guide</a>
+<nav class="site-nav" aria-label="Collection"><div class="site-nav-inner"><a class="site-home" href="index.html">← Interactive Guides</a></div></nav>
+<div class="environment-dock js-only">
+  <div class="environment-options" role="group" aria-label="Execution environment">
+    <button type="button" data-environment="native" aria-pressed="true" aria-controls="vm-stacks"><svg class="vm-icon" aria-hidden="true"><use href="#vm-icon-process"/></svg><span>Native process</span></button>
+    <button type="button" data-environment="container" aria-pressed="false" aria-controls="vm-stacks"><svg class="vm-icon" aria-hidden="true"><use href="#vm-icon-container"/></svg><span>Container</span></button>
+    <button type="button" data-environment="vm" aria-pressed="false" aria-controls="vm-stacks"><svg class="vm-icon" aria-hidden="true"><use href="#vm-icon-vm"/></svg><span>Virtual machine</span></button>
+  </div>
+</div>
+<main id="main">
+  <header>
+    <h1>How processes, containers, and virtual machines isolate work</h1>
+    <p class="subtitle">Trace the same file request in three environments, then test which boundary contains a simulated crash.</p>
+  </header>
+  <section id="machines" aria-labelledby="vm-title">
+    <figure class="panel">
+      <h2 id="vm-title">Trace an uncached file read</h2>
+      <noscript><p class="note">JavaScript is off. Compare the three request paths below; failure scopes and further detail follow the diagram.</p></noscript>
+      <div class="playback toolbar js-only" id="vm-player" role="group" aria-label="Request playback">
+        <button type="button" id="vm-player-previous" disabled>← Prev event</button>
+        <button type="button" id="vm-player-play" class="primary" aria-pressed="false">Play</button>
+        <button type="button" id="vm-player-next">Next event →</button>
+        <button type="button" id="vm-player-reset">Restart</button>
+        <output id="vm-player-count" aria-live="off">Event 1 of 4</output>
+      </div>
+      <progress id="vm-player-progress" class="js-only" max="4" value="1" aria-label="Request events visited"></progress>
+      <div class="board">
+        <div id="vm-route" aria-label="Request path, from application to hardware">
+          <div id="vm-stacks">
+            <article data-stack="native" aria-labelledby="native-title">
+              <h3 id="native-title">Native process</h3>
+              <p class="stack-summary">Own address space; the host’s process and filesystem views.</p>
+              <div class="machine-case">
+                <div class="machine-header"><svg class="vm-icon" aria-hidden="true"><use href="#vm-icon-host"/></svg><strong>Physical host</strong><span>App’s host PID: 2417</span></div>
+                <div class="stack-scope"><div class="scope-heading"><span class="scope-label">Process address space</span><span class="scope-detail">Memory isolation</span></div><ol class="stack">
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-process"/></svg></span><div class="layer-copy"><strong>Application process</strong><small>Requests file bytes through a system call.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">1</span></li>
+                </ol>
+                  <div class="process-view" data-view="native" role="group" aria-labelledby="native-view-title">
+                    <div class="view-heading"><strong id="native-view-title">What the app sees</strong><span>Host view · example</span></div>
+                    <table class="process-table" aria-label="Example process list visible to the native app"><thead><tr><th scope="col">PID</th><th scope="col">Process</th></tr></thead><tbody><tr class="neighbor"><td>1</td><td>host init</td></tr><tr class="neighbor"><td>635</td><td>other service</td></tr><tr class="this-app"><td>2417</td><td>this app</td></tr></tbody></table>
+                    <dl class="view-properties"><div><dt>Files</dt><dd><code>/notes.txt</code> in the host mount view</dd></div><div><dt>Limits</dt><dd>No extra cgroup cap in this example</dd></div></dl>
+                  </div>
+                  <p class="namespace-note">Other host PIDs are visible here. Seeing a process or path does not grant access to it.</p>
+                </div>
+                <div class="stack-scope"><div class="scope-heading"><span class="scope-label">Shared hosting OS</span><span class="scope-detail">Same kernel as containers</span></div><ol class="stack" start="2">
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-kernel"/></svg></span><div class="layer-copy"><strong>Host kernel</strong><small>Checks access and manages the filesystem.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">2</span></li>
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-driver"/></svg></span><div class="layer-copy"><strong>Host driver</strong><small>Submits the needed device request.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">3</span></li>
+                </ol></div>
+                <div class="stack-scope"><div class="scope-heading"><span class="scope-label">Physical resources</span></div><ol class="stack" start="4">
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-hardware"/></svg></span><div class="layer-copy"><strong>Physical hardware</strong><small>The storage device performs the work.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">4</span></li>
+                </ol></div>
+              </div>
+            </article>
+            <article data-stack="container" aria-labelledby="container-title">
+              <h3 id="container-title">Container</h3>
+              <p class="stack-summary">Own address space plus private process and filesystem views. Still the host’s kernel.</p>
+              <div class="machine-case">
+                <div class="machine-header"><svg class="vm-icon" aria-hidden="true"><use href="#vm-icon-host"/></svg><strong>Physical host</strong><span>App’s host PID: 2417</span></div>
+                <div class="stack-scope isolated"><div class="scope-heading"><span class="scope-label">Container boundary</span><span class="scope-detail">Private OS views</span></div>
+                  <div class="process-shell"><span class="label">Process address space</span><ol class="stack">
+                    <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-container"/></svg></span><div class="layer-copy"><strong>Container process</strong><small>Still a process, with namespaces and configured resource controls.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">1</span></li>
+                  </ol></div>
+                  <div class="process-view" data-view="container" role="group" aria-labelledby="container-view-title">
+                    <div class="view-heading"><strong id="container-view-title">What the app sees</strong><span>Private view · example</span></div>
+                    <table class="process-table" aria-label="Example process list visible inside the container"><thead><tr><th scope="col">PID</th><th scope="col">Process</th></tr></thead><tbody><tr class="this-app"><td>1</td><td>this app</td></tr></tbody></table>
+                    <dl class="view-properties"><div><dt>Files</dt><dd><code>/notes.txt</code> in a <strong>container root</strong>, plus explicitly mounted paths</dd></div><div><dt>Limits</dt><dd>Example cgroup cap: <strong>1 CPU worth · 512 MiB RAM</strong></dd></div></dl>
+                  </div>
+                  <p class="namespace-note">Namespaces change the view: host PID 2417 appears as PID 1 here. Cgroup caps are optional, not a new kernel.</p>
+                </div>
+                <div class="stack-scope"><div class="scope-heading"><span class="scope-label">Shared hosting OS</span><span class="scope-detail">No guest kernel</span></div><ol class="stack" start="2">
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-kernel"/></svg></span><div class="layer-copy"><strong>Shared hosting kernel</strong><small>System calls enter this kernel; there is no guest kernel.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">2</span></li>
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-driver"/></svg></span><div class="layer-copy"><strong>Host driver</strong><small>Services permitted device requests.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">3</span></li>
+                </ol></div>
+                <div class="stack-scope"><div class="scope-heading"><span class="scope-label">Physical resources</span></div><ol class="stack" start="4">
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-hardware"/></svg></span><div class="layer-copy"><strong>Physical hardware</strong><small>Configured resource controls can limit use of real resources.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">4</span></li>
+                </ol></div>
+              </div>
+            </article>
+            <article data-stack="vm" aria-labelledby="guest-title">
+              <h3 id="guest-title">Virtual machine</h3>
+              <p class="stack-summary">A guest OS runs its own kernel on virtual hardware managed by a hypervisor.</p>
+              <div class="machine-case">
+                <div class="machine-header"><svg class="vm-icon" aria-hidden="true"><use href="#vm-icon-host"/></svg><strong>Physical host</strong><span>Hosted VM example</span></div>
+                <div class="stack-scope isolated"><div class="scope-heading"><span class="scope-label">Virtual machine boundary</span><span class="scope-detail">Own guest kernel</span></div><ol class="stack">
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-process"/></svg></span><div class="layer-copy"><strong>Guest application</strong><small>Makes a system call to its guest kernel.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">1</span></li>
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-kernel"/></svg></span><div class="layer-copy"><strong>Guest kernel</strong><small>Checks access and interprets the guest filesystem.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">2</span></li>
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-device"/></svg></span><div class="layer-copy"><strong>Virtual device</strong><small>A virtual disk request enters virtualization machinery.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">3</span></li>
+                </ol>
+                  <div class="process-view" data-view="vm" role="group" aria-labelledby="guest-view-title">
+                    <div class="view-heading"><strong id="guest-view-title">What the guest sees</strong><span>Guest OS · example</span></div>
+                    <table class="process-table" aria-label="Example process list managed by the guest kernel"><thead><tr><th scope="col">Guest PID</th><th scope="col">Process</th></tr></thead><tbody><tr class="neighbor"><td>1</td><td>guest init</td></tr><tr class="this-app"><td>42</td><td>this app</td></tr></tbody></table>
+                    <dl class="view-properties"><div><dt>Kernel</dt><dd><strong>Own guest kernel</strong> manages these processes</dd></div><div><dt>Files</dt><dd><code>/notes.txt</code> in the guest filesystem on a <strong>virtual disk</strong></dd></div></dl>
+                    <dl class="guest-hardware" aria-label="Example virtual hardware allocation"><div><dt><svg class="vm-icon" aria-hidden="true"><use href="#vm-icon-cpu"/></svg>vCPUs</dt><dd>2</dd></div><div><dt><svg class="vm-icon" aria-hidden="true"><use href="#vm-icon-memory"/></svg>Assigned RAM</dt><dd>2 GiB</dd></div><div><dt><svg class="vm-icon" aria-hidden="true"><use href="#vm-icon-device"/></svg>Virtual disk</dt><dd>20 GiB</dd></div></dl>
+                  </div>
+                  <p class="namespace-note">Guest PID 42 belongs to the guest kernel—not a renamed host PID as in a container PID namespace. These example allocations describe virtual hardware, not dedicated physical cores or a separate physical machine.</p>
+                </div>
+                <div class="stack-scope"><div class="scope-heading"><span class="scope-label">Hosting infrastructure</span><span class="scope-detail">Outside the guest</span></div><ol class="stack" start="4">
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-hypervisor"/></svg></span><div class="layer-copy"><strong>Hypervisor / hosting support</strong><small>Virtualization and device models arrange host-side I/O.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">4</span></li>
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-driver"/></svg></span><div class="layer-copy"><strong>Host driver</strong><small>Handles the physical device request in this example.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">5</span></li>
+                </ol></div>
+                <div class="stack-scope"><div class="scope-heading"><span class="scope-label">Physical resources</span></div><ol class="stack" start="6">
+                  <li class="layer"><span class="layer-icon" aria-hidden="true"><svg class="vm-icon"><use href="#vm-icon-hardware"/></svg></span><div class="layer-copy"><strong>Physical hardware</strong><small>Real CPU time, RAM, and devices support the guest.</small><span class="layer-current">Current event</span></div><span class="layer-number" aria-hidden="true">6</span></li>
+                </ol></div>
+              </div>
+            </article>
+          </div>
+        </div>
+        <div class="narration">
+          <div class="event-heading"><span class="event-icon" aria-hidden="true"><svg class="vm-icon"><use id="vm-event-icon" href="#vm-icon-process"/></svg></span><div><p class="label" id="vm-domain-label">Conceptual file request</p><h3 id="vm-heading">Follow the request, not every instruction.</h3></div></div>
+          <p id="vm-description" role="status">These paths show who services a file request. They are not a pipeline through which every application instruction passes.</p>
+          <div class="toolbar failure-controls js-only" role="group" aria-label="Simulated failures">
+            <span class="label">Pause and inspect failure scope</span>
+            <button type="button" id="vm-app-crash"><svg class="vm-icon" aria-hidden="true"><use href="#vm-icon-stop"/></svg>Simulate app crash</button>
+            <button type="button" id="vm-kernel-crash"><svg class="vm-icon" aria-hidden="true"><use href="#vm-icon-warning"/></svg><span id="vm-kernel-label">Simulate host-kernel crash</span></button>
+          </div>
+          <div class="result" id="vm-result" role="status" hidden><div class="result-heading"><svg class="vm-icon" aria-hidden="true"><use href="#vm-icon-warning"/></svg>What if this crashes?</div><p id="vm-result-text"></p></div>
+        </div>
+      </div>
+      <figcaption>Native processes and containers deliberately share the same lower layers: the difference is the configured views and controls, not another kernel. The VM trace is one conventional hosted, virtual-device path—not a universal hypervisor topology. Passthrough and other architectures differ. Cache hits can avoid device I/O; return and completion paths are omitted.</figcaption>
+    </figure>
+    <p class="takeaway">Ordinary arithmetic runs as application instructions on the CPU; it needs no system call. <strong>Virtual memory is an address-space abstraction, not a virtual machine.</strong></p>
+    <details>
+      <summary>Failure boundaries &amp; model limits</summary>
+      <p><strong>App crash:</strong> this process stops. In the container example, the app is PID 1 in a private PID namespace: its exit also terminates any remaining processes in that namespace. The hosting kernel and other isolated workloads can continue, though shared services or application dependencies can still be affected.</p>
+      <p><strong>Example views, not universal defaults:</strong> native/container views illustrate Linux-style PID and mount namespaces; the VM has a separate guest OS process list. PIDs and virtual hardware allocations are example configurations, not measurements or extra read events. A vCPU is scheduled on physical CPUs; virtual disk capacity need not be preallocated on the host. The container has a configured cgroup CPU/memory cap here. Native processes can also use namespaces and cgroups, and containers can be configured to share host namespaces. Visibility does not bypass access checks; resource caps do not appear automatically.</p>
+      <p><strong>Hosting-kernel crash:</strong> native processes and ordinary containers sharing that kernel lose normal operation. Container isolation does not supply a separate kernel.</p>
+      <p><strong>Guest-kernel crash:</strong> this guest and its applications stop. The host and other guests can continue under the intended isolation boundary. This is not a hypervisor crash: failure of the hypervisor or hosting infrastructure can affect multiple guests.</p>
+      <p>VM-backed container isolation also exists; desktop tools often host Linux containers inside a VM. “Shared hosting kernel” can therefore be a VM’s guest kernel. Isolation is a design boundary, not an absolute security guarantee.</p>
+      <p>The controls only display a local teaching simulation. No real processes or VMs are launched, no files or devices are changed, and nothing actually crashes. Restart clears the displayed failure and restarts the trace.</p>
+    </details>
+  </section>
+  <footer>
+    <details>
+      <summary>Sources &amp; further detail</summary>
+      <h3>Where do QEMU, KVM, and “type 1 / type 2” fit?</h3>
+      <p>Type 1 and type 2 are conventional hypervisor categories, not complete architecture diagrams. KVM adds virtualization facilities to the Linux kernel; QEMU commonly supplies userspace machine/device models and uses KVM for hardware-assisted execution. QEMU can also emulate CPUs in software. A VM does not necessarily emulate every CPU instruction.</p>
+      <ul>
+        <li>QEMU: <a href="https://www.qemu.org/docs/master/system/introduction.html">System-emulation architecture</a>.</li>
+        <li>Linux kernel: <a href="https://docs.kernel.org/virt/kvm/api.html">KVM API</a>.</li>
+        <li>Microsoft Learn: <a href="https://learn.microsoft.com/en-us/virtualization/windowscontainers/about/containers-vs-vm">Containers versus virtual machines</a>.</li>
+        <li>Linux isolation mechanisms: <a href="https://man7.org/linux/man-pages/man7/namespaces.7.html">Namespaces</a> and <a href="https://docs.kernel.org/admin-guide/cgroup-v2.html">cgroup v2</a>.</li>
+        <li>OSTEP: <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf">Limited direct execution</a>; Microsoft Learn: <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/gettingstarted/virtual-address-spaces">Virtual address spaces</a>.</li>
+      </ul>
+      <p class="note">AI-generated learning aid. The layers and events simplify real systems; they are not performance measurements. Verify important details against authoritative sources.</p>
+    </details>
+  </footer>
+</main>
+<script src="assets/vm-guide.js"></script>
+<script src="assets/guide-layout.js"></script>
+</body>
+</html>
