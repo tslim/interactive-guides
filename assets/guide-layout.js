@@ -271,6 +271,9 @@
     credit.append(document.createTextNode('Prompted by '));
     const name = make('a', 'T.S. Lim'); name.href = 'https://www.clipsoflogic.com';
     credit.append(name);
+    const learningLink = make('a', 'Learn how these guides are made →');
+    learningLink.href = 'https://www.clipsoflogic.com/learning-anything-with-ai/';
+    credit.append(document.createTextNode(' · '), learningLink);
     themeToggle = make('button', undefined, 'theme-toggle');
     themeToggle.type = 'button';
     themeToggle.addEventListener('click', () => {
